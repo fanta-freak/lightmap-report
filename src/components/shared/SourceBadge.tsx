@@ -23,7 +23,7 @@ export function useSourceBadgeVisible() {
 }
 
 export function SourceBadgeProvider({ children }: { children: ReactNode }) {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   return (
     <SourceBadgeContext.Provider value={visible}>

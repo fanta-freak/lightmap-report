@@ -182,3 +182,21 @@ export interface ReportData {
   luminaires: Luminaire[];
   luminaireList: LuminaireListEntry[];
 }
+
+/* ─── Full API payload (ReportData + supplementary data) ─── */
+
+export type { GeoCenter } from '../utils/coordinates';
+
+export interface BuildingFacade {
+  label: string;
+  line: { x: number; y: number }[];
+}
+
+export interface ReportPayload extends ReportData {
+  geoCenter: import('../utils/coordinates').GeoCenter;
+  fieldSpec: FieldSpecification;
+  laiRequirements: LAIRequirements;
+  glossaryTerms: GlossaryTerm[];
+  fieldMetrics: ResultMetric[];
+  buildingFacades: BuildingFacade[];
+}
