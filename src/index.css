@@ -1,0 +1,312 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   Light Theme — Default Signify Tokens
+   ═══════════════════════════════════════════════════════ */
+@theme {
+  --color-signify-green: #00e487;
+  --color-signify-teal: #1ecbd0;
+  --color-signify-teal-dark: #17a8ac;
+
+  --color-signify-dark: #1A1A2E;
+  --color-signify-gray: #6B7280;
+  --color-signify-light-gray: #9CA3AF;
+
+  --color-bg-page: #FFFFFF;
+  --color-bg-light: #F9FAFB;
+  --color-card-white: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-border-light: #F3F4F6;
+
+  --color-pass-green: #16A34A;
+  --color-fail-red: #DC2626;
+  --color-warn-amber: #D97706;
+
+  --color-mast-label: #DC2626;
+  --color-field-outline: #F97316;
+  --color-building-outline: #3B82F6;
+  --color-arrow-blue: #2563EB;
+
+  --color-heatmap-low: #8B4513;
+  --color-heatmap-mid-low: #D97706;
+  --color-heatmap-mid: #EAB308;
+  --color-heatmap-mid-high: #84CC16;
+  --color-heatmap-high: #22C55E;
+  --color-heatmap-max: #15803D;
+
+  --font-family-sans: 'Noto Sans', system-ui, -apple-system, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Menlo', monospace;
+}
+
+/* ─── Base Styles ─── */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+
+body {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-bg-page);
+  color: var(--color-signify-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ─── Shared Utilities ─── */
+.gradient-accent {
+  height: 2px;
+  background: linear-gradient(90deg, #00e487, #1ecbd0);
+  border: none;
+}
+
+.section-accent {
+  background: linear-gradient(180deg, #00e487, #1ecbd0);
+}
+
+/* ─── Theme Toggle ─── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  color: var(--color-signify-gray);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-toggle:hover {
+  color: var(--color-signify-dark);
+  border-color: var(--color-signify-gray);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   Dark Theme
+   ═══════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-bg-page: #0B1120;
+  --color-bg-light: #111B2E;
+  --color-card-white: #162033;
+  --color-signify-dark: #E2E8F0;
+  --color-signify-gray: #7E8DA4;
+  --color-signify-light-gray: #4A5974;
+  --color-border: #1E2E42;
+  --color-border-light: #172236;
+  --color-pass-green: #00e487;
+  --color-fail-red: #FF4D6A;
+  --color-warn-amber: #FBBF24;
+  --font-family-sans: 'Barlow', system-ui, sans-serif;
+  --font-family-mono: 'Fira Code', monospace;
+}
+
+/* Dark headings: Barlow Condensed uppercase */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Glowing gradient accent */
+[data-theme="dark"] .gradient-accent {
+  height: 2px;
+  background: linear-gradient(90deg, #00e487, #1ecbd0, #00e487);
+  box-shadow: 0 0 16px rgba(0, 228, 135, 0.35), 0 0 4px rgba(30, 203, 208, 0.25);
+}
+
+/* Cards: dark with glow border */
+[data-theme="dark"] .bg-card-white {
+  border: 1px solid rgba(30, 203, 208, 0.12);
+  box-shadow: 0 0 24px rgba(0, 228, 135, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+/* Section accent: glowing */
+[data-theme="dark"] .section-accent {
+  box-shadow: 0 0 12px rgba(0, 228, 135, 0.5), 0 0 4px rgba(30, 203, 208, 0.3);
+}
+
+/* Stat values: neon glow */
+[data-theme="dark"] .stat-value {
+  color: #00e487;
+  text-shadow: 0 0 16px rgba(0, 228, 135, 0.3);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Logo brightness for dark bg */
+[data-theme="dark"] img[alt="Signify"] {
+  filter: brightness(1.4) contrast(1.1);
+}
+
+/* Dark scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2A3A50; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3A5070; }
+
+/* Table headers */
+[data-theme="dark"] table th {
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #7E8DA4;
+}
+[data-theme="dark"] tbody tr:hover {
+  background-color: rgba(30, 203, 208, 0.04) !important;
+}
+
+/* Header/footer dark */
+[data-theme="dark"] header {
+  background-color: #0D1526;
+  border-color: #1E2E42;
+}
+[data-theme="dark"] footer {
+  background-color: #0D1526 !important;
+}
+
+/* Dark mode border overrides */
+[data-theme="dark"] .border-gray-100 { border-color: #1E2E42; }
+[data-theme="dark"] .border-gray-50 { border-color: #172236; }
+[data-theme="dark"] .border-gray-200 { border-color: #243450; }
+
+/* PDF button: gradient fill */
+[data-theme="dark"] .pdf-export-btn {
+  background: linear-gradient(135deg, #00e487, #1ecbd0) !important;
+  color: #0B1120;
+  font-weight: 700;
+  border: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Theme toggle dark */
+[data-theme="dark"] .theme-toggle {
+  background: #111B2E;
+  border-color: #1E2E42;
+  color: #FBBF24;
+}
+[data-theme="dark"] .theme-toggle:hover {
+  border-color: #3A5070;
+  color: #E2E8F0;
+}
+
+/* Stat card bg for dark mode */
+[data-theme="dark"] .stat-card-bg {
+  background-color: #111B2E;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   Print Styles — always prints in light theme
+   ═══════════════════════════════════════════════════════ */
+@media print {
+  body {
+    background: white !important;
+    font-size: 11pt;
+    line-height: 1.5;
+    font-family: 'Noto Sans', system-ui, sans-serif !important;
+    color: #1A1A2E !important;
+  }
+
+  /* Hide interactive elements */
+  .no-print,
+  .source-badge-toggle,
+  .theme-toggle,
+  nav,
+  button:not(.print-keep) {
+    display: none !important;
+  }
+
+  /* Force light theme colors for print */
+  [data-theme] {
+    --color-bg-page: #FFFFFF !important;
+    --color-bg-light: #F9FAFB !important;
+    --color-card-white: #FFFFFF !important;
+    --color-signify-dark: #1A1A2E !important;
+    --color-signify-gray: #6B7280 !important;
+    --color-border: #E5E7EB !important;
+    --color-border-light: #F3F4F6 !important;
+    --font-family-sans: 'Noto Sans', system-ui, sans-serif !important;
+    --font-family-mono: 'JetBrains Mono', monospace !important;
+  }
+
+  /* Reset dark mode heading overrides for print */
+  [data-theme="dark"] h1,
+  [data-theme="dark"] h2,
+  [data-theme="dark"] h3,
+  [data-theme="dark"] h4 {
+    font-family: 'Noto Sans', system-ui, sans-serif !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+  }
+
+  /* Reset dark mode card/header overrides */
+  [data-theme="dark"] header,
+  [data-theme="dark"] footer {
+    background-color: white !important;
+    border-color: #E5E7EB !important;
+  }
+  [data-theme="dark"] .bg-card-white {
+    border-color: #E5E7EB !important;
+    box-shadow: none !important;
+  }
+  [data-theme="dark"] .stat-value {
+    color: #1A1A2E !important;
+    text-shadow: none !important;
+    font-size: inherit !important;
+  }
+  [data-theme="dark"] .gradient-accent {
+    box-shadow: none !important;
+  }
+  [data-theme="dark"] .section-accent {
+    box-shadow: none !important;
+  }
+  [data-theme="dark"] img[alt="Signify"] {
+    filter: none !important;
+  }
+  [data-theme="dark"] .border-gray-100 { border-color: #F3F4F6 !important; }
+  [data-theme="dark"] .border-gray-50 { border-color: #F9FAFB !important; }
+  [data-theme="dark"] .border-gray-200 { border-color: #E5E7EB !important; }
+  [data-theme="dark"] table th {
+    font-family: 'Noto Sans', system-ui, sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #6B7280 !important;
+  }
+
+  /* Clean print layout */
+  .bg-card-white, .bg-bg-light, section, div {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .print-break-before {
+    break-before: page;
+  }
+  canvas, .maplibregl-canvas {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 15mm 20mm;
+    @bottom-center {
+      content: "© Signify GmbH";
+    }
+  }
+}
