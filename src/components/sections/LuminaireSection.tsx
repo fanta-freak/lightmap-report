@@ -120,7 +120,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
               {/* Luminaire illustration */}
               <div className="bg-bg-light rounded border border-border p-4 mb-5 flex items-center justify-center min-h-[140px]">
                 <img
-                  src="/images/luminaire-bvp518.png"
+                  src={`${import.meta.env.BASE_URL}images/luminaire-bvp518.png`}
                   alt={lum.name}
                   className="max-h-[120px] object-contain"
                   onError={(e) => {
