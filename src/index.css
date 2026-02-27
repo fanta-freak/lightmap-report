@@ -303,6 +303,16 @@ body {
     break-inside: avoid;
   }
 
+  /* Heatmap: fit to page width in print */
+  .heatmap-container {
+    overflow: visible !important;
+    min-width: 0 !important;
+  }
+  .heatmap-container canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
   @page {
     margin: 15mm 20mm;
     @bottom-center {

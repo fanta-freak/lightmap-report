@@ -362,7 +362,7 @@ export function IlluminanceGrid({
   }, []);
 
   return (
-    <div className="bg-card-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-card-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-break-before">
       {/* Header */}
       <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
         <div>
@@ -396,7 +396,7 @@ export function IlluminanceGrid({
       </div>
 
       {/* Canvas */}
-      <div ref={containerRef} className="px-4 py-6 overflow-x-auto" style={{ minWidth: 600 }}>
+      <div ref={containerRef} className="heatmap-container px-4 py-6 overflow-x-auto" style={{ minWidth: 600 }}>
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
