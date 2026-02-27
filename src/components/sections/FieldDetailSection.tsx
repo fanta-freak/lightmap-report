@@ -234,9 +234,10 @@ function FieldDiagram({ length, width }: { length: number; width: number }) {
         x={pad + svgW + 18}
         y={pad + svgH / 2}
         textAnchor="middle"
+        dominantBaseline="middle"
         className="text-xs font-semibold"
         fill="#1A1A2E"
-        transform={`rotate(90, ${pad + svgW + 18}, ${pad + svgH / 2})`}
+        transform={`rotate(-90, ${pad + svgW + 18}, ${pad + svgH / 2})`}
       >
         {width} m
       </text>
