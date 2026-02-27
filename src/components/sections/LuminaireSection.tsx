@@ -120,15 +120,9 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
               {/* Luminaire illustration */}
               <div className="bg-bg-light rounded border border-border p-4 mb-5 flex items-center justify-center min-h-[140px]">
                 <img
-                  src={`${import.meta.env.BASE_URL}images/luminaire-bvp518.png`}
+                  src={`${import.meta.env.BASE_URL}images/luminaire-default.webp`}
                   alt={lum.name}
                   className="max-h-[120px] object-contain"
-                  onError={(e) => {
-                    // Fallback if image not yet saved
-                    const el = e.currentTarget;
-                    el.style.display = 'none';
-                    el.parentElement!.innerHTML = '<p class="text-xs text-signify-gray">Leuchtenabbildung</p>';
-                  }}
                 />
               </div>
 
