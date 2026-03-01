@@ -88,10 +88,10 @@ export function ReportMap({
     const toGeo = (x: number, y: number) =>
       swapped ? localToLngLat(y, x, geoCenter) : localToLngLat(x, y, geoCenter);
 
-    // Field polygon — swap half-dimensions when axes are swapped
-    const fieldFeature = swapped
-      ? fieldPolygonGeoJSON(halfLength, halfWidth, geoCenter)
-      : fieldPolygonGeoJSON(halfWidth, halfLength, geoCenter);
+    // Field polygon — always use (halfWidth, halfLength) because fieldPolygonGeoJSON
+    // draws in the localToLngLat coordinate space where localX=width, localY=length.
+    // The swap only applies to DATA points (masts, calc points) whose X/Y meanings differ.
+    const fieldFeature = fieldPolygonGeoJSON(halfWidth, halfLength, geoCenter);
 
     // Mast points
     const mastFeatures: GeoJSON.Feature[] = masts.map((m, i) => {
