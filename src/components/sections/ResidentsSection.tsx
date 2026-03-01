@@ -118,7 +118,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                   Math.max(...buildings.map((b) => b.ksmax)) <= laiRequirements.ksMaxLimit
                     ? 'text-pass-green' : 'text-fail-red'
                 }`}>
-                  {Math.max(...buildings.map((b) => b.ksmax))}
+                  {Math.max(...buildings.map((b) => b.ksmax)).toFixed(1).replace('.', ',')}
                 </span>
               </div>
             </div>
@@ -202,7 +202,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                     </td>
                     <td className="py-3 text-right">
                       <span className={`text-sm font-semibold font-mono ${ksPassed ? 'text-signify-dark' : 'text-fail-red'}`}>
-                        <SourceBadge source="pdf">{bld.ksmax}</SourceBadge>
+                        <SourceBadge source="dump">{bld.ksmax.toFixed(1).replace('.', ',')}</SourceBadge>
                       </span>
                     </td>
                     <td className="py-3 text-center">
