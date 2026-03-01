@@ -9,11 +9,41 @@ import {
   mockGlossaryTerms,
 } from '../mock/mockData';
 import { mockGeoCenter, mockBuildingFacades } from '../mock/mockGeo';
+import { synthesizeLuminaireList, computeFieldMetrics } from '../utils/dataFallbacks';
 
 interface UseReportDataResult {
   data: ReportDetail | null;
   loading: boolean;
   error: string | null;
+}
+
+/**
+ * Apply data fallbacks: synthesize missing luminaireList and fieldMetrics
+ * from the raw data that IS available.
+ */
+function applyFallbacks(report: ReportDetail): ReportDetail {
+  const p = report.payload;
+
+  // Synthesize luminaireList from lightpoints + directions + luminaires
+  const luminaireList =
+    p.luminaireList && p.luminaireList.length > 0
+      ? p.luminaireList
+      : synthesizeLuminaireList(p.lightpoints, p.directions, p.luminaires);
+
+  // Auto-compute fieldMetrics from calculationPoints if empty
+  const fieldMetrics =
+    p.fieldMetrics && p.fieldMetrics.length > 0
+      ? p.fieldMetrics
+      : computeFieldMetrics(p.calculationPoints);
+
+  return {
+    ...report,
+    payload: {
+      ...p,
+      luminaireList,
+      fieldMetrics,
+    },
+  };
 }
 
 export function useReportData(id: string | undefined): UseReportDataResult {
@@ -46,7 +76,7 @@ export function useReportData(id: string | undefined): UseReportDataResult {
     setError(null);
 
     fetchReport(id)
-      .then(setData)
+      .then((report) => setData(applyFallbacks(report)))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
