@@ -93,6 +93,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
             </div>
 
             {/* Max values found */}
+            {buildings.length > 0 && (
             <div className="bg-bg-light rounded p-4 border border-gray-100">
               <p className="text-xs font-semibold text-signify-gray uppercase tracking-wider mb-3">
                 Höchstwerte über alle Fassaden
@@ -120,6 +121,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                 </span>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

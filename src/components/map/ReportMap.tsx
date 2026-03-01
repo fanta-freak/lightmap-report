@@ -103,10 +103,10 @@ export function ReportMap({
       const fromLngLat = localToLngLat(mast.x, mast.y, geoCenter);
       // Use aimingLine[1] if available, fall back to vector
       let aimX: number, aimY: number;
-      if (dir.aimingLine && dir.aimingLine.length >= 2) {
+      if (Array.isArray(dir.aimingLine) && dir.aimingLine.length >= 2 && typeof dir.aimingLine[1]?.x === 'number') {
         aimX = dir.aimingLine[1].x;
         aimY = dir.aimingLine[1].y;
-      } else if (dir.vector) {
+      } else if (dir.vector && typeof dir.vector === 'object' && typeof dir.vector.x === 'number') {
         aimX = dir.vector.x;
         aimY = dir.vector.y;
       } else {

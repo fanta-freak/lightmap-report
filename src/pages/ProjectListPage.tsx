@@ -5,10 +5,12 @@ import { useReportList } from '../hooks/useReportList';
 import type { ReportListItem } from '../api/types';
 
 function ReportCard({ report }: { report: ReportListItem }) {
-  const date = new Date(report.created_at).toLocaleDateString('de-DE', {
+  const date = new Date(report.created_at).toLocaleString('de-DE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   return (
