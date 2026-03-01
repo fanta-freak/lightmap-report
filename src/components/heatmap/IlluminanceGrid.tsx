@@ -30,13 +30,12 @@ interface TooltipData {
 }
 
 /*
- * Coordinate convention (from DB / lightpoints):
- *   X = field WIDTH direction  (short side, ±34m field, masts at ±37.5m)
- *   Y = field LENGTH direction (long side,  ±52.5m field, masts at ±55m)
+ * Axis orientation is auto-detected from the data.
+ * The axis with span ≈ fieldLength is the "length" axis (horizontal on canvas).
+ * The axis with span ≈ fieldWidth is the "width" axis (vertical on canvas).
  *
- * Display mapping (landscape orientation like the PDF):
- *   Horizontal canvas axis ← Y (length, wider range)
- *   Vertical canvas axis   ← X (width, narrower range, flipped so +X = top)
+ * Mock data convention:  X = width, Y = length  → normal
+ * C# app convention:     X = length, Y = width  → swapped
  */
 
 export function IlluminanceGrid({
@@ -61,9 +60,8 @@ export function IlluminanceGrid({
     const pointMap = new Map<string, CalculationPoint>();
     points.forEach((p) => pointMap.set(`${p.x},${p.y}`, p));
 
-    // Build cells: row = X index (top→bottom = max X → min X), col = Y index (left→right = min Y → max Y)
-    const xsSorted = [...uniqueXs].sort((a, b) => b - a); // descending: top row = highest X
-    const ysSorted = [...uniqueYs].sort((a, b) => a - b); // ascending: left col = lowest Y
+    const xsSorted = [...uniqueXs].sort((a, b) => b - a); // descending
+    const ysSorted = [...uniqueYs].sort((a, b) => a - b); // ascending
 
     const cells: GridCell[][] = [];
     xsSorted.forEach((x, row) => {
@@ -78,21 +76,34 @@ export function IlluminanceGrid({
 
     return {
       cells,
-      cols: ysSorted.length,   // Y values = columns (horizontal)
-      rows: xsSorted.length,   // X values = rows (vertical)
-      uniqueXs: xsSorted,      // descending (top to bottom)
-      uniqueYs: ysSorted,      // ascending (left to right)
+      cols: ysSorted.length,
+      rows: xsSorted.length,
+      uniqueXs: xsSorted,
+      uniqueYs: ysSorted,
     };
   }, [points]);
 
-  // Compute world bounds including grid AND mast positions
-  // World coords: H = Y (length), V = X (width)
+  // Auto-detect axis orientation & compute world bounds
   const worldBounds = useMemo(() => {
-    const halfW = fieldWidth / 2;   // X range of field: ±halfW
-    const halfL = fieldLength / 2;  // Y range of field: ±halfL
+    // Measure actual data spans
+    const xVals = points.map((p) => p.x);
+    const yVals = points.map((p) => p.y);
+    const xSpan = xVals.length > 0 ? Math.max(...xVals) - Math.min(...xVals) : 0;
+    const ySpan = yVals.length > 0 ? Math.max(...yVals) - Math.min(...yVals) : 0;
 
-    let xMin = -halfW, xMax = halfW;
-    let yMin = -halfL, yMax = halfL;
+    // Compare spans to field dimensions to detect orientation
+    // Normal:  X ≈ fieldWidth,  Y ≈ fieldLength
+    // Swapped: X ≈ fieldLength, Y ≈ fieldWidth
+    const normalErr = Math.abs(xSpan - fieldWidth) + Math.abs(ySpan - fieldLength);
+    const swappedErr = Math.abs(xSpan - fieldLength) + Math.abs(ySpan - fieldWidth);
+    const swapped = swappedErr < normalErr;
+
+    // Field half-dimensions in the world X/Y axes
+    const xHalfField = swapped ? fieldLength / 2 : fieldWidth / 2;
+    const yHalfField = swapped ? fieldWidth / 2 : fieldLength / 2;
+
+    let xMin = -xHalfField, xMax = xHalfField;
+    let yMin = -yHalfField, yMax = yHalfField;
 
     // Expand to include mast positions
     masts.forEach((m) => {
@@ -102,19 +113,20 @@ export function IlluminanceGrid({
       yMax = Math.max(yMax, m.y);
     });
 
-    // Add padding for labels
+    // Padding for labels
     const padX = (xMax - xMin) * 0.07;
     const padY = (yMax - yMin) * 0.05;
     xMin -= padX; xMax += padX;
     yMin -= padY; yMax += padY;
 
-    // Display dimensions: H = Y range, V = X range
+    // Display: horizontal = length axis, vertical = width axis
     return {
       xMin, xMax, yMin, yMax,
-      hRange: yMax - yMin,  // horizontal = Y (length)
-      vRange: xMax - xMin,  // vertical = X (width)
+      swapped,
+      hRange: swapped ? (xMax - xMin) : (yMax - yMin),
+      vRange: swapped ? (yMax - yMin) : (xMax - xMin),
     };
-  }, [fieldLength, fieldWidth, masts]);
+  }, [points, fieldLength, fieldWidth, masts]);
 
   // Draw effect
   useEffect(() => {
@@ -128,9 +140,9 @@ export function IlluminanceGrid({
     const rafId = requestAnimationFrame(() => {
       const dpr = window.devicePixelRatio || 1;
       const containerWidth = Math.max(container.clientWidth, 600);
+      const { swapped, xMin, xMax, yMin, yMax, hRange, vRange } = worldBounds;
 
-      // Canvas aspect: horizontal = Y range (length), vertical = X range (width)
-      const aspect = worldBounds.vRange / worldBounds.hRange;
+      const aspect = vRange / hRange;
       const canvasW = containerWidth;
       const canvasH = canvasW * aspect;
 
@@ -142,28 +154,38 @@ export function IlluminanceGrid({
       const ctx = canvas.getContext('2d')!;
       ctx.scale(dpr, dpr);
 
-      // World-to-canvas mapping:
-      //   Horizontal: world Y → canvas X  (Y increases left to right)
-      //   Vertical:   world X → canvas Y  (X increases bottom to top, so flip)
-      const toCanvasH = (worldY: number) =>
-        ((worldY - worldBounds.yMin) / worldBounds.hRange) * canvasW;
-      const toCanvasV = (worldX: number) =>
-        ((worldBounds.xMax - worldX) / worldBounds.vRange) * canvasH;
+      // World-to-canvas mapping functions
+      // toCanvasH: maps the "horizontal display coord" to canvas X
+      // toCanvasV: maps the "vertical display coord" to canvas Y (flipped: + = top)
+      const hMin = swapped ? xMin : yMin;
+      const vMax = swapped ? yMax : xMax;
+
+      const toCanvasH = (hCoord: number) =>
+        ((hCoord - hMin) / hRange) * canvasW;
+      const toCanvasV = (vCoord: number) =>
+        ((vMax - vCoord) / vRange) * canvasH;
+
+      // Extract the display-axis coordinate from a world (x, y) pair
+      const getH = (x: number, y: number) => swapped ? x : y;
+      const getV = (x: number, y: number) => swapped ? y : x;
 
       // Clear
       ctx.fillStyle = '#F8FAFB';
       ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // Cell dimensions in world coords
-      const cellWorldH = cols > 1
-        ? (uniqueYs[uniqueYs.length - 1] - uniqueYs[0]) / (cols - 1)
+      // Cell dimensions in display coords
+      const hValues = swapped ? uniqueXs : uniqueYs;
+      const vValues = swapped ? uniqueYs : uniqueXs;
+
+      const cellWorldH = hValues.length > 1
+        ? Math.abs(hValues[hValues.length - 1] - hValues[0]) / (hValues.length - 1)
         : 1;
-      const cellWorldV = rows > 1
-        ? (uniqueXs[0] - uniqueXs[uniqueXs.length - 1]) / (rows - 1)
+      const cellWorldV = vValues.length > 1
+        ? Math.abs(vValues[vValues.length - 1] - vValues[0]) / (vValues.length - 1)
         : 1;
-      // Cell dimensions in pixels
-      const cellPixelW = (cellWorldH / worldBounds.hRange) * canvasW;
-      const cellPixelH = (cellWorldV / worldBounds.vRange) * canvasH;
+
+      const cellPixelW = (cellWorldH / hRange) * canvasW;
+      const cellPixelH = (cellWorldV / vRange) * canvasH;
 
       // Draw grid cells
       for (let r = 0; r < rows; r++) {
@@ -171,8 +193,10 @@ export function IlluminanceGrid({
           const cell = cells[r]?.[c];
           if (!cell) continue;
 
-          const cx = toCanvasH(cell.y) - cellPixelW / 2;
-          const cy = toCanvasV(cell.x) - cellPixelH / 2;
+          const ch = getH(cell.x, cell.y);
+          const cv = getV(cell.x, cell.y);
+          const cx = toCanvasH(ch) - cellPixelW / 2;
+          const cy = toCanvasV(cv) - cellPixelH / 2;
           const isHovered = hoveredCell?.row === r && hoveredCell?.col === c;
 
           ctx.fillStyle = luxToColor(cell.eh);
@@ -194,31 +218,33 @@ export function IlluminanceGrid({
             ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(String(Math.round(cell.eh)), toCanvasH(cell.y), toCanvasV(cell.x));
+            ctx.fillText(String(Math.round(cell.eh)), toCanvasH(ch), toCanvasV(cv));
           }
         }
       }
 
-      // Draw total area outline (thin gray)
-      const halfW = fieldWidth / 2;
-      const halfL = fieldLength / 2;
+      // Field outline: length always horizontal, width always vertical
+      const halfFieldH = fieldLength / 2;
+      const halfFieldV = fieldWidth / 2;
+
+      // Total area outline (thin gray)
       ctx.strokeStyle = 'rgba(107, 114, 128, 0.3)';
       ctx.lineWidth = 1;
       ctx.strokeRect(
-        toCanvasH(-halfL), toCanvasV(halfW),
-        toCanvasH(halfL) - toCanvasH(-halfL),
-        toCanvasV(-halfW) - toCanvasV(halfW)
+        toCanvasH(-halfFieldH), toCanvasV(halfFieldV),
+        toCanvasH(halfFieldH) - toCanvasH(-halfFieldH),
+        toCanvasV(-halfFieldV) - toCanvasV(halfFieldV)
       );
 
-      // Draw playing area outline (dashed orange, inset ~10%)
+      // Playing area outline (dashed orange, inset ~10%)
       const paInset = 0.1;
       ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 4]);
       ctx.strokeRect(
-        toCanvasH(-halfL * (1 - paInset)), toCanvasV(halfW * (1 - paInset)),
-        toCanvasH(halfL * (1 - paInset)) - toCanvasH(-halfL * (1 - paInset)),
-        toCanvasV(-halfW * (1 - paInset)) - toCanvasV(halfW * (1 - paInset))
+        toCanvasH(-halfFieldH * (1 - paInset)), toCanvasV(halfFieldV * (1 - paInset)),
+        toCanvasH(halfFieldH * (1 - paInset)) - toCanvasH(-halfFieldH * (1 - paInset)),
+        toCanvasV(-halfFieldV * (1 - paInset)) - toCanvasV(halfFieldV * (1 - paInset))
       );
       ctx.setLineDash([]);
 
@@ -228,7 +254,6 @@ export function IlluminanceGrid({
           const dir = directions.find((d) => d.id === mast.direction_id);
           if (!dir) return;
 
-          // Use aimingLine[1] if available, fall back to vector
           let aimX: number, aimY: number;
           if (Array.isArray(dir.aimingLine) && dir.aimingLine.length >= 2 && typeof dir.aimingLine[1]?.x === 'number') {
             aimX = dir.aimingLine[1].x;
@@ -240,10 +265,10 @@ export function IlluminanceGrid({
             return;
           }
 
-          const fromH = toCanvasH(mast.y);
-          const fromV = toCanvasV(mast.x);
-          const toH = toCanvasH(aimY);
-          const toV = toCanvasV(aimX);
+          const fromH = toCanvasH(getH(mast.x, mast.y));
+          const fromV = toCanvasV(getV(mast.x, mast.y));
+          const toH = toCanvasH(getH(aimX, aimY));
+          const toV = toCanvasV(getV(aimX, aimY));
 
           ctx.strokeStyle = '#2563EB';
           ctx.lineWidth = 2;
@@ -267,8 +292,8 @@ export function IlluminanceGrid({
       // Draw mast markers and labels
       ctx.font = 'bold 12px Inter, system-ui, sans-serif';
       masts.forEach((mast, i) => {
-        const mh = toCanvasH(mast.y);
-        const mv = toCanvasV(mast.x);
+        const mh = toCanvasH(getH(mast.x, mast.y));
+        const mv = toCanvasV(getV(mast.x, mast.y));
 
         // Mast dot
         ctx.beginPath();
@@ -284,12 +309,13 @@ export function IlluminanceGrid({
         let labelH = mh;
         let labelV = mv;
 
-        // X determines top/bottom (masts above or below the grid)
-        if (mast.x > halfW * 0.5) labelV -= labelOffset;       // above grid → label above
-        else if (mast.x < -halfW * 0.5) labelV += labelOffset;  // below grid → label below
+        // Vertical axis coord determines top/bottom label placement
+        const mastVCoord = getV(mast.x, mast.y);
+        if (mastVCoord > halfFieldV * 0.5) labelV -= labelOffset;
+        else if (mastVCoord < -halfFieldV * 0.5) labelV += labelOffset;
         else {
-          // Side masts (x≈0) — shouldn't happen with current data but handle anyway
-          labelH += mast.y < 0 ? -labelOffset * 2 : labelOffset * 2;
+          const mastHCoord = getH(mast.x, mast.y);
+          labelH += mastHCoord < 0 ? -labelOffset * 2 : labelOffset * 2;
         }
 
         ctx.fillStyle = '#1A1A2E';
@@ -326,20 +352,27 @@ export function IlluminanceGrid({
       const canvasW = canvas.clientWidth;
       const canvasH = canvas.clientHeight;
 
-      // Inverse mapping: canvas → world
-      const worldY = worldBounds.yMin + (mouseH / canvasW) * worldBounds.hRange;
-      const worldX = worldBounds.xMax - (mouseV / canvasH) * worldBounds.vRange;
+      const { swapped, xMin, yMin, xMax, yMax, hRange, vRange } = worldBounds;
 
-      // Cell sizes in world coords
-      const cellWorldH = cols > 1 ? (uniqueYs[uniqueYs.length - 1] - uniqueYs[0]) / (cols - 1) : 5;
-      const cellWorldV = rows > 1 ? (uniqueXs[0] - uniqueXs[uniqueXs.length - 1]) / (rows - 1) : 5;
+      // Inverse mapping: canvas → world x, y
+      const hMin = swapped ? xMin : yMin;
+      const vMax = swapped ? yMax : xMax;
+      const hCoord = hMin + (mouseH / canvasW) * hRange;
+      const vCoord = vMax - (mouseV / canvasH) * vRange;
+
+      const worldX = swapped ? hCoord : vCoord;
+      const worldY = swapped ? vCoord : hCoord;
+
+      // Cell sizes in world coords (always X and Y)
+      const cellWorldX = rows > 1 ? Math.abs(uniqueXs[0] - uniqueXs[uniqueXs.length - 1]) / (rows - 1) : 5;
+      const cellWorldY = cols > 1 ? Math.abs(uniqueYs[uniqueYs.length - 1] - uniqueYs[0]) / (cols - 1) : 5;
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const cell = cells[r]?.[c];
           if (!cell) continue;
-          if (Math.abs(worldX - cell.x) < cellWorldV / 2 &&
-              Math.abs(worldY - cell.y) < cellWorldH / 2) {
+          if (Math.abs(worldX - cell.x) < cellWorldX / 2 &&
+              Math.abs(worldY - cell.y) < cellWorldY / 2) {
             setHoveredCell({ row: r, col: c });
             setTooltip({
               x: cell.x, y: cell.y,
