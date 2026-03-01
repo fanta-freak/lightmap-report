@@ -25,6 +25,8 @@ export interface ReportMapProps {
   buildings?: Building[];
   /** Building facade lines in local coords (rendered as thick blue lines) */
   buildingFacades?: { label: string; line: { x: number; y: number }[] }[];
+  /** When true, data axes are swapped (X=length, Y=width instead of X=width, Y=length) */
+  swapped?: boolean;
   /** Show labels */
   showMastLabels?: boolean;
   showBuildingLabels?: boolean;
@@ -70,6 +72,7 @@ export function ReportMap({
   masts = [],
   directions = [],
   buildingFacades = [],
+  swapped = false,
   showMastLabels = true,
   showBuildingLabels = true,
   className = '',
@@ -80,12 +83,19 @@ export function ReportMap({
 
   // ── Pre-compute all GeoJSON data ──
   const geoData = useMemo(() => {
-    // Field polygon
-    const fieldFeature = fieldPolygonGeoJSON(halfWidth, halfLength, geoCenter);
+    // When swapped (X=length, Y=width), we need to pass (y, x) to localToLngLat
+    // because it expects (width_coord, length_coord)
+    const toGeo = (x: number, y: number) =>
+      swapped ? localToLngLat(y, x, geoCenter) : localToLngLat(x, y, geoCenter);
+
+    // Field polygon — swap half-dimensions when axes are swapped
+    const fieldFeature = swapped
+      ? fieldPolygonGeoJSON(halfLength, halfWidth, geoCenter)
+      : fieldPolygonGeoJSON(halfWidth, halfLength, geoCenter);
 
     // Mast points
     const mastFeatures: GeoJSON.Feature[] = masts.map((m, i) => {
-      const lngLat = localToLngLat(m.x, m.y, geoCenter);
+      const lngLat = toGeo(m.x, m.y);
       return {
         type: 'Feature' as const,
         properties: { label: `Mast ${i + 1}` },
@@ -100,7 +110,7 @@ export function ReportMap({
       const dir = directions.find((d) => d.id === mast.direction_id);
       if (!dir) continue;
 
-      const fromLngLat = localToLngLat(mast.x, mast.y, geoCenter);
+      const fromLngLat = toGeo(mast.x, mast.y);
       // Use aimingLine[1] if available, fall back to vector
       let aimX: number, aimY: number;
       if (Array.isArray(dir.aimingLine) && dir.aimingLine.length >= 2 && typeof dir.aimingLine[1]?.x === 'number') {
@@ -112,7 +122,7 @@ export function ReportMap({
       } else {
         continue;
       }
-      const toLngLat = localToLngLat(aimX, aimY, geoCenter);
+      const toLngLat = toGeo(aimX, aimY);
 
       arrowFeatures.push({
         type: 'Feature' as const,
@@ -126,7 +136,7 @@ export function ReportMap({
 
     // Building facade lines
     const buildingFeatures: GeoJSON.Feature[] = buildingFacades.map((bf) => {
-      const coords = bf.line.map((p) => localToLngLat(p.x, p.y, geoCenter));
+      const coords = bf.line.map((p) => toGeo(p.x, p.y));
       return {
         type: 'Feature' as const,
         properties: { label: bf.label },
@@ -137,14 +147,13 @@ export function ReportMap({
     // Building label points (midpoint of facade line)
     const buildingLabelFeatures: GeoJSON.Feature[] = buildingFacades.map((bf) => {
       const mid = Math.floor(bf.line.length / 2);
-      // For 2-point lines, average the endpoints; for 3+ points, use the middle vertex
       const cx = bf.line.length === 2
         ? (bf.line[0].x + bf.line[1].x) / 2
         : bf.line[mid].x;
       const cy = bf.line.length === 2
         ? (bf.line[0].y + bf.line[1].y) / 2
         : bf.line[mid].y;
-      const lngLat = localToLngLat(cx, cy, geoCenter);
+      const lngLat = toGeo(cx, cy);
       return {
         type: 'Feature' as const,
         properties: { label: bf.label },
@@ -179,7 +188,7 @@ export function ReportMap({
       buildingLabelFeatures,
       bounds,
     };
-  }, [geoCenter, halfWidth, halfLength, masts, directions, buildingFacades]);
+  }, [geoCenter, halfWidth, halfLength, masts, directions, buildingFacades, swapped]);
 
   // ── Initialize map ──
   useEffect(() => {

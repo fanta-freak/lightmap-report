@@ -2,7 +2,7 @@ import type { ReportData, LAIRequirements } from '../../types';
 import { PassFailBadge } from '../shared/PassFailBadge';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 import { ReportMap } from '../map/ReportMap';
-import type { GeoCenter } from '../../utils/coordinates';
+import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 
 interface ResidentsSectionProps {
   data: ReportData;
@@ -12,9 +12,10 @@ interface ResidentsSectionProps {
 }
 
 export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFacades }: ResidentsSectionProps) {
-  const { buildings, lightpoints, directions } = data;
+  const { buildings, lightpoints, directions, calculationPoints } = data;
   const halfW = data.project.field_width / 2;
   const halfL = data.project.field_length / 2;
+  const swapped = detectAxisSwap(calculationPoints, data.project.field_length, data.project.field_width);
 
   return (
     <section className="space-y-8">
@@ -134,6 +135,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
         masts={lightpoints}
         directions={directions}
         buildingFacades={buildingFacades}
+        swapped={swapped}
         showMastLabels={true}
         showBuildingLabels={true}
         height={400}

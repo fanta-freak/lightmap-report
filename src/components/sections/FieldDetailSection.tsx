@@ -1,6 +1,6 @@
 import type { ReportData, FieldSpecification } from '../../types';
 import { ReportMap } from '../map/ReportMap';
-import type { GeoCenter } from '../../utils/coordinates';
+import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 
 interface FieldDetailSectionProps {
@@ -11,9 +11,10 @@ interface FieldDetailSectionProps {
 }
 
 export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: FieldDetailSectionProps) {
-  const { project, lightpoints, directions } = data;
+  const { project, lightpoints, directions, calculationPoints } = data;
   const halfW = project.field_width / 2;
   const halfL = project.field_length / 2;
+  const swapped = detectAxisSwap(calculationPoints, project.field_length, project.field_width);
 
   return (
     <section className="space-y-8">
@@ -79,6 +80,7 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
         halfLength={halfL}
         masts={lightpoints}
         directions={directions}
+        swapped={swapped}
         showMastLabels={true}
         showBuildingLabels={false}
         height={400}

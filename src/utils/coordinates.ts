@@ -101,6 +101,25 @@ export function fieldPolygonGeoJSON(
 }
 
 /**
+ * Detect if the data axes are swapped relative to the default convention (X=width, Y=length).
+ * Returns true when X ≈ fieldLength and Y ≈ fieldWidth (i.e. axes are swapped).
+ */
+export function detectAxisSwap(
+  points: { x: number; y: number }[],
+  fieldLength: number,
+  fieldWidth: number,
+): boolean {
+  if (points.length === 0) return false;
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const xSpan = Math.max(...xs) - Math.min(...xs);
+  const ySpan = Math.max(...ys) - Math.min(...ys);
+  const normalErr = Math.abs(xSpan - fieldWidth) + Math.abs(ySpan - fieldLength);
+  const swappedErr = Math.abs(xSpan - fieldLength) + Math.abs(ySpan - fieldWidth);
+  return swappedErr < normalErr;
+}
+
+/**
  * Compute the bounding box that contains all given [lng, lat] points with padding.
  */
 export function getBounds(
