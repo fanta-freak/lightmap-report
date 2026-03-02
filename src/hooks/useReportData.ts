@@ -49,6 +49,12 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
       ? p.fieldMetrics
       : computeFieldMetrics(p.calculationPoints, p.results);
 
+  // Always attach glossary from mock data (not expected from API)
+  const glossaryTerms =
+    p.glossaryTerms && p.glossaryTerms.length > 0
+      ? p.glossaryTerms
+      : mockGlossaryTerms;
+
   return {
     ...report,
     payload: {
@@ -56,6 +62,7 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
       buildingFacades,
       luminaireList,
       fieldMetrics,
+      glossaryTerms,
     },
   };
 }
