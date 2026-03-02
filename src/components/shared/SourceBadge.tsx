@@ -23,12 +23,12 @@ export function useSourceBadgeVisible() {
 }
 
 export function SourceBadgeProvider({ children }: { children: ReactNode }) {
-  const [visible, setVisible] = useState(false);
+  const [visible, _setVisible] = useState(false);
 
   return (
     <SourceBadgeContext.Provider value={visible}>
       {children}
-      {/* Floating toggle button */}
+      {/* Toggle hidden for customer preview — uncomment for dev auditing
       <button
         onClick={() => setVisible((v) => !v)}
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-card-white border border-gray-200 shadow-lg rounded-full px-4 py-2.5 text-sm font-medium text-signify-dark hover:bg-gray-50 transition-colors"
@@ -48,6 +48,7 @@ export function SourceBadgeProvider({ children }: { children: ReactNode }) {
         </span>
         {visible ? 'Marker an' : 'Marker aus'}
       </button>
+      */}
     </SourceBadgeContext.Provider>
   );
 }
