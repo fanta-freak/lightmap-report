@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { SignifyLogo } from '../components/shared/SignifyLogo';
 import { ThemeSwitcher } from '../components/shared/ThemeSwitcher';
@@ -82,8 +83,25 @@ function MetricPill({ label, subscript, value, passed }: {
   );
 }
 
+/** Group reports by project_name, sorted alphabetically. Reports within each group sorted newest first. */
+function useGroupedReports(reports: ReportListItem[]) {
+  return useMemo(() => {
+    const groups = new Map<string, ReportListItem[]>();
+    for (const r of reports) {
+      const key = r.project_name;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(r);
+    }
+    // Sort groups alphabetically by project name
+    const sorted = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, 'de'));
+    // Within each group, reports are already newest-first from the API
+    return sorted;
+  }, [reports]);
+}
+
 export function ProjectListPage() {
   const { reports, loading, error } = useReportList();
+  const grouped = useGroupedReports(reports);
 
   return (
     <div className="min-h-screen bg-bg-page">
@@ -150,11 +168,26 @@ export function ProjectListPage() {
           </div>
         )}
 
-        {/* Report cards */}
-        {!loading && !error && reports.length > 0 && (
-          <div className="flex flex-col gap-3">
-            {reports.map((report) => (
-              <ReportCard key={report.id} report={report} />
+        {/* Grouped report cards */}
+        {!loading && !error && grouped.length > 0 && (
+          <div className="flex flex-col gap-8">
+            {grouped.map(([projectName, groupReports]) => (
+              <div key={projectName}>
+                {/* Project name header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <h2 className="text-lg font-bold text-signify-dark">{projectName}</h2>
+                  <span className="text-xs text-signify-gray font-mono">
+                    {groupReports.length} {groupReports.length === 1 ? 'Bericht' : 'Berichte'}
+                  </span>
+                </div>
+                <div className="border-b border-border mb-3" />
+                {/* Reports within group, newest first */}
+                <div className="flex flex-col gap-2">
+                  {groupReports.map((report) => (
+                    <ReportCard key={report.id} report={report} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
