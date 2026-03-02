@@ -13,6 +13,9 @@ function ReportCard({ report }: { report: ReportListItem }) {
     minute: '2-digit',
   });
 
+  const rg = report.rg != null ? Number(report.rg) : null;
+  const uniformity = report.uniformity != null ? Number(report.uniformity) : null;
+
   return (
     <Link
       to={`/report/${report.id}`}
@@ -33,6 +36,26 @@ function ReportCard({ report }: { report: ReportListItem }) {
         </div>
       </div>
 
+      {/* Center: key metrics */}
+      <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
+        {uniformity != null && (
+          <MetricPill
+            label="E"
+            subscript="min/m"
+            value={uniformity.toFixed(2).replace('.', ',')}
+            passed={uniformity > 0.5}
+          />
+        )}
+        {rg != null && (
+          <MetricPill
+            label="R"
+            subscript="G"
+            value={rg.toFixed(1).replace('.', ',')}
+            passed={rg < 55}
+          />
+        )}
+      </div>
+
       {/* Right: wattage + date */}
       <div className="flex-shrink-0 text-right">
         {report.project_wattage != null && (
@@ -43,6 +66,19 @@ function ReportCard({ report }: { report: ReportListItem }) {
         <p className="text-xs text-signify-gray mt-0.5">{date}</p>
       </div>
     </Link>
+  );
+}
+
+function MetricPill({ label, subscript, value, passed }: {
+  label: string; subscript: string; value: string; passed: boolean;
+}) {
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono font-semibold ${
+      passed ? 'bg-pass-green/10 text-pass-green' : 'bg-fail-red/10 text-fail-red'
+    }`}>
+      {label}<sub className="text-[9px]">{subscript}</sub>{' '}{value}
+      <span className="ml-0.5">{passed ? '✓' : '✗'}</span>
+    </span>
   );
 }
 

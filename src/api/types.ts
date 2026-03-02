@@ -7,6 +7,10 @@ export interface ReportListItem {
   project_town: string | null;
   project_wattage: number | null;
   created_at: string;
+  /** Glare Rating RG from results[0] */
+  rg: number | null;
+  /** Uniformity Emin/Em from results[0].ta_u */
+  uniformity: number | null;
 }
 
 export interface ReportDetail {
