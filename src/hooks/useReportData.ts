@@ -18,11 +18,24 @@ interface UseReportDataResult {
 }
 
 /**
- * Apply data fallbacks: synthesize missing luminaireList and fieldMetrics
- * from the raw data that IS available.
+ * Apply data fallbacks and key normalization:
+ * - Map `building_facades` (snake_case) → `buildingFacades` (camelCase)
+ * - Synthesize missing luminaireList from lightpoints + directions + luminaires
+ * - Auto-compute fieldMetrics from results[] + calculationPoints if empty
  */
 function applyFallbacks(report: ReportDetail): ReportDetail {
   const p = report.payload;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = p as any;
+
+  // Map snake_case key → camelCase (API sends building_facades, frontend expects buildingFacades)
+  const buildingFacades =
+    p.buildingFacades && p.buildingFacades.length > 0
+      ? p.buildingFacades
+      : raw.building_facades && raw.building_facades.length > 0
+        ? raw.building_facades
+        : [];
 
   // Synthesize luminaireList from lightpoints + directions + luminaires
   const luminaireList =
@@ -30,16 +43,17 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
       ? p.luminaireList
       : synthesizeLuminaireList(p.lightpoints, p.directions, p.luminaires);
 
-  // Auto-compute fieldMetrics from calculationPoints if empty
+  // Auto-compute fieldMetrics from results[] + calculationPoints if empty
   const fieldMetrics =
     p.fieldMetrics && p.fieldMetrics.length > 0
       ? p.fieldMetrics
-      : computeFieldMetrics(p.calculationPoints);
+      : computeFieldMetrics(p.calculationPoints, p.results);
 
   return {
     ...report,
     payload: {
       ...p,
+      buildingFacades,
       luminaireList,
       fieldMetrics,
     },

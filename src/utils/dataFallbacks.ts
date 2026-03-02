@@ -3,7 +3,7 @@
  *
  * When the API payload is missing certain derived arrays (luminaireList, fieldMetrics),
  * these functions synthesize them from the raw data that IS available
- * (lightpoints, directions, luminaires, calculationPoints).
+ * (lightpoints, directions, luminaires, calculationPoints, results).
  */
 
 import type {
@@ -12,6 +12,7 @@ import type {
   Direction,
   Luminaire,
   CalculationPoint,
+  FieldResult,
   ResultMetric,
 } from '../types';
 
@@ -102,80 +103,101 @@ export function synthesizeLuminaireList(
   });
 }
 
+/* ─── German number formatting ─── */
+const fmtDe = (n: number, decimals = 2) =>
+  n.toFixed(decimals).replace('.', ',');
+
 /**
- * Auto-compute basic fieldMetrics from calculationPoints.
+ * Compute fieldMetrics from `results` (FieldResult) + calculationPoints.
  *
- * Computes Em, Emin, Emax, uniformity (Emin/Em), and Emin/Emax.
- * Glare (RG) and Ta/Pa ratios cannot be computed from eh values alone
- * and are marked as "—".
+ * Uses the pre-computed results record (rg, ta/pa values) when available.
+ * Falls back to computing from raw eh values in calculationPoints.
  */
 export function computeFieldMetrics(
   calculationPoints: CalculationPoint[],
+  results?: FieldResult[],
 ): ResultMetric[] {
-  // Filter to points with valid eh values
+  const r = results && results.length > 0 ? results[0] : null;
+
+  // --- Gather eh-based stats as fallback ---
   const ehValues = calculationPoints
     .map((cp) => cp.eh)
     .filter((v): v is number => v != null && typeof v === 'number' && !isNaN(v));
 
-  if (ehValues.length === 0) return [];
+  const ehMean = ehValues.length > 0 ? ehValues.reduce((a, b) => a + b, 0) / ehValues.length : null;
+  const ehMin = ehValues.length > 0 ? Math.min(...ehValues) : null;
+  const ehMax = ehValues.length > 0 ? Math.max(...ehValues) : null;
 
-  const sum = ehValues.reduce((a, b) => a + b, 0);
-  const mean = sum / ehValues.length;
-  const min = Math.min(...ehValues);
-  const max = Math.max(...ehValues);
-  const uniformity = mean > 0 ? min / mean : 0;
-  const minMaxRatio = max > 0 ? min / max : 0;
+  // --- Use results record if available, otherwise fall back to eh stats ---
+  const taEhave = r?.ta_ehave ?? ehMean;
+  const taEhmin = r?.ta_ehmin ?? ehMin;
+  const taU = r?.ta_u ?? (taEhave && taEhmin ? taEhmin / taEhave : null);
+  const paEhave = r?.pa_ehave ?? null;
+  const paU = r?.pa_u ?? null;
+  const rg = r?.rg ?? null;
 
-  const fmtDe = (n: number, decimals = 2) =>
-    n.toFixed(decimals).replace('.', ',');
+  // Emin/Emax from eh stats (not in results record)
+  const eMin = ehMin ?? taEhmin;
+  const eMax = ehMax;
+  const minMaxRatio = eMin != null && eMax != null && eMax > 0 ? eMin / eMax : null;
 
-  return [
+  // Ta/Pa illuminance ratio
+  const taPaIllum = taEhave != null && paEhave != null && paEhave > 0
+    ? (taEhave / paEhave) * 100 : null;
+
+  // Ta/Pa uniformity ratio
+  const taPaUnif = taU != null && paU != null && paU > 0
+    ? (taU / paU) * 100 : null;
+
+  if (taEhave == null) return []; // No data at all
+
+  const metrics: ResultMetric[] = [
     {
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
       requirement: '> 75 lux',
-      result: `${Math.round(mean)} lux`,
-      passed: mean > 75,
+      result: `${Math.round(taEhave)} lux`,
+      passed: taEhave > 75,
       unit: 'lux',
-      source: 'dump',
+      source: r ? 'dump' : 'dump',
     },
     {
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
       requirement: '> 0,50',
-      result: fmtDe(uniformity),
-      passed: uniformity > 0.5,
-      source: 'dump',
+      result: taU != null ? fmtDe(taU) : '—',
+      passed: taU != null ? taU > 0.5 : true,
+      source: r ? 'dump' : 'dump',
     },
     {
       label: 'Blendindex R',
       subscript: 'G',
       requirement: '< 55',
-      result: '—',
-      passed: true, // Cannot verify — mark as pass with dash
-      source: 'invented',
+      result: rg != null ? fmtDe(rg, 1) : '—',
+      passed: rg != null ? rg < 55 : true,
+      source: rg != null ? 'dump' : 'invented',
     },
     {
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
-      result: '—',
-      passed: true,
-      source: 'invented',
+      result: taPaIllum != null ? `${Math.round(taPaIllum)} %` : '—',
+      passed: taPaIllum != null ? taPaIllum > 75 : true,
+      source: taPaIllum != null ? 'dump' : 'invented',
     },
     {
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
-      result: '—',
-      passed: true,
-      source: 'invented',
+      result: taPaUnif != null ? `${Math.round(taPaUnif)} %` : '—',
+      passed: taPaUnif != null ? taPaUnif > 75 : true,
+      source: taPaUnif != null ? 'dump' : 'invented',
     },
     {
       label: 'Ungleichmäßigkeit E',
       subscript: 'min/max',
       requirement: '',
-      result: fmtDe(minMaxRatio),
+      result: minMaxRatio != null ? fmtDe(minMaxRatio) : '—',
       passed: true,
       source: 'dump',
     },
@@ -183,7 +205,7 @@ export function computeFieldMetrics(
       label: 'E',
       subscript: 'min',
       requirement: '',
-      result: `${fmtDe(min, 1)} lux`,
+      result: eMin != null ? `${fmtDe(eMin, 1)} lux` : '—',
       passed: true,
       source: 'dump',
     },
@@ -191,9 +213,11 @@ export function computeFieldMetrics(
       label: 'E',
       subscript: 'max',
       requirement: '',
-      result: `${fmtDe(max, 1)} lux`,
+      result: eMax != null ? `${fmtDe(eMax, 1)} lux` : '—',
       passed: true,
       source: 'dump',
     },
   ];
+
+  return metrics;
 }
