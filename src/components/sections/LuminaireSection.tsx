@@ -46,9 +46,6 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                   Ausrichtpunkt (X, Y)
                 </th>
                 <th className="text-right py-3 px-3 text-xs font-semibold text-signify-gray uppercase tracking-wider">
-                  Rotation
-                </th>
-                <th className="text-right py-3 px-3 text-xs font-semibold text-signify-gray uppercase tracking-wider">
                   Neigung
                 </th>
               </tr>
@@ -82,9 +79,6 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                     <SourceBadge source="dump">{fmt(entry.aimingPoint.x)}, {fmt(entry.aimingPoint.y)}</SourceBadge>
                   </td>
                   <td className="py-3 px-3 text-right font-mono text-sm text-signify-dark">
-                    <SourceBadge source="dump">{entry.rotation}°</SourceBadge>
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-sm text-signify-dark">
                     <SourceBadge source="dump">{entry.tilt}°</SourceBadge>
                   </td>
                 </tr>
@@ -96,7 +90,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                 <td colSpan={2} className="py-3 px-3 text-sm font-bold text-signify-dark">
                   Gesamt: {luminaireList.length} Leuchten
                 </td>
-                <td colSpan={4} className="py-3 px-3 text-right text-sm font-bold text-signify-dark">
+                <td colSpan={3} className="py-3 px-3 text-right text-sm font-bold text-signify-dark">
                   Gesamtleistung: <SourceBadge source="dump">{project.project_wattage.toLocaleString('de-DE')} W</SourceBadge>
                 </td>
               </tr>
