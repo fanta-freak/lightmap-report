@@ -227,24 +227,24 @@ export function IlluminanceGrid({
       const halfFieldH = fieldLength / 2;
       const halfFieldV = fieldWidth / 2;
 
-      // Total area outline (thin gray)
-      ctx.strokeStyle = 'rgba(107, 114, 128, 0.3)';
-      ctx.lineWidth = 1;
+      // Playing Area (PA) outline — solid white = the actual field boundary
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.5;
       ctx.strokeRect(
         toCanvasH(-halfFieldH), toCanvasV(halfFieldV),
         toCanvasH(halfFieldH) - toCanvasH(-halfFieldH),
         toCanvasV(-halfFieldV) - toCanvasV(halfFieldV)
       );
 
-      // Playing area outline (dashed orange, inset ~10%)
-      const paInset = 0.1;
+      // Total Area (TA) outline — dashed orange = PA + 1.5m offset per EN 12193
+      const taOffset = 1.5; // meters beyond field boundary
       ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 4]);
       ctx.strokeRect(
-        toCanvasH(-halfFieldH * (1 - paInset)), toCanvasV(halfFieldV * (1 - paInset)),
-        toCanvasH(halfFieldH * (1 - paInset)) - toCanvasH(-halfFieldH * (1 - paInset)),
-        toCanvasV(-halfFieldV * (1 - paInset)) - toCanvasV(halfFieldV * (1 - paInset))
+        toCanvasH(-halfFieldH - taOffset), toCanvasV(halfFieldV + taOffset),
+        toCanvasH(halfFieldH + taOffset) - toCanvasH(-halfFieldH - taOffset),
+        toCanvasV(-halfFieldV - taOffset) - toCanvasV(halfFieldV + taOffset)
       );
       ctx.setLineDash([]);
 
