@@ -129,9 +129,9 @@ export function computeFieldMetrics(
       // EN 12193: Average maintained illuminance on playing area (PA)
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
-      requirement: '> 75 lux',
+      requirement: '≥ 75 lux',
       result: `${Math.round(r.pa_ehave)} lux`,
-      passed: r.pa_ehave > 75,
+      passed: r.pa_ehave >= 75,
       unit: 'lux',
       source: 'dump',
     },
@@ -139,36 +139,36 @@ export function computeFieldMetrics(
       // EN 12193: Uniformity on playing area (Emin / Eavg)
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
-      requirement: '> 0,50',
+      requirement: '≥ 0,50',
       result: fmtDe(r.pa_u),
-      passed: r.pa_u > 0.5,
+      passed: r.pa_u >= 0.5,
       source: 'dump',
     },
     {
       // EN 12193: Glare rating (threshold increment)
       label: 'Blendindex R',
       subscript: 'G',
-      requirement: '< 55',
+      requirement: '≤ 55',
       result: fmtDe(r.rg, 1),
-      passed: r.rg < 55,
+      passed: r.rg <= 55,
       source: 'dump',
     },
     {
       // EN 12193: TA/PA illuminance ratio — pre-computed by server
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
-      requirement: '> 75 %',
+      requirement: '≥ 75 %',
       result: `${Math.round(taPaIllum)} %`,
-      passed: taPaIllum > 75,
+      passed: taPaIllum >= 75,
       source: 'dump',
     },
     {
       // EN 12193: TA/PA uniformity ratio — pre-computed by server
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
-      requirement: '> 75 %',
+      requirement: '≥ 75 %',
       result: `${Math.round(taPaUnif)} %`,
-      passed: taPaUnif > 75,
+      passed: taPaUnif >= 75,
       source: 'dump',
     },
     {
