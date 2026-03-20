@@ -11,7 +11,7 @@ import type {
   LightPoint,
   Direction,
   Luminaire,
-  CalculationPoint,
+  CalculationPoint,  // kept for function signature compatibility
   FieldResult,
   ResultMetric,
 } from '../types';
@@ -108,131 +108,93 @@ const fmtDe = (n: number, decimals = 2) =>
   n.toFixed(decimals).replace('.', ',');
 
 /**
- * Compute fieldMetrics from `results` (FieldResult) + calculationPoints.
+ * Build field metrics table purely from pre-computed server results.
  *
- * Uses the pre-computed results record (rg, ta/pa values) when available.
- * Falls back to computing from raw eh values in calculationPoints.
- */
-/**
- * Build field metrics table from pre-computed server results.
- *
- * Uses PA (playing area) values for the primary EN 12193 criteria,
- * and TA (total area) values only for the TA/PA ratio rows.
- * Falls back to recalculating from raw calculationPoints only when
- * the server didn't provide a results record.
+ * This function does NO recalculation — all values come directly from the
+ * calculation server's results record. The report is a dumb display layer.
  */
 export function computeFieldMetrics(
-  calculationPoints: CalculationPoint[],
+  _calculationPoints: CalculationPoint[],
   results?: FieldResult[],
 ): ResultMetric[] {
   const r = results && results.length > 0 ? results[0] : null;
+  if (!r) return [];
 
-  // --- Fallback: gather stats from raw calculation points (only if no results record) ---
-  const ehValues = calculationPoints
-    .map((cp) => cp.eh)
-    .filter((v): v is number => v != null && typeof v === 'number' && !isNaN(v));
-
-  const ehMean = ehValues.length > 0 ? ehValues.reduce((a, b) => a + b, 0) / ehValues.length : null;
-  const ehMin = ehValues.length > 0 ? Math.min(...ehValues) : null;
-  const ehMax = ehValues.length > 0 ? Math.max(...ehValues) : null;
-
-  // --- Primary values: use PA (playing area) from server results ---
-  // PA is the primary assessment area per EN 12193
-  const paEhave = r?.pa_ehave ?? ehMean;
-  const paEhmin = r?.pa_ehmin ?? ehMin;
-  const paU = r?.pa_u ?? (paEhave && paEhmin ? paEhmin / paEhave : null);
-
-  // TA (total area) values — used for TA/PA ratio calculations
-  const taEhave = r?.ta_ehave ?? null;
-  const taU = r?.ta_u ?? null;
-
-  // Glare rating — directly from server
-  const rg = r?.rg ?? null;
-
-  // Emin/Emax from raw calculation points (for info rows, not norm criteria)
-  const eMin = ehMin ?? paEhmin;
-  const eMax = ehMax;
-  const minMaxRatio = eMin != null && eMax != null && eMax > 0 ? eMin / eMax : null;
-
-  // TA/PA ratios — how well the total area compares to playing area
-  const taPaIllum = taEhave != null && paEhave != null && paEhave > 0
-    ? (taEhave / paEhave) * 100 : null;
-  const taPaUnif = taU != null && paU != null && paU > 0
-    ? (taU / paU) * 100 : null;
-
-  if (paEhave == null) return []; // No data at all
+  // All values straight from the server — no recalculation
+  const taPaIllum = r.ta_to_pa_ehave * 100;  // server sends as ratio (e.g. 0.96)
+  const taPaUnif = r.ta_to_pa_u * 100;       // server sends as ratio (e.g. 0.67)
 
   const metrics: ResultMetric[] = [
     {
-      // EN 12193: Average maintained illuminance on playing area
+      // EN 12193: Average maintained illuminance on playing area (PA)
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
       requirement: '> 75 lux',
-      result: `${Math.round(paEhave)} lux`,
-      passed: paEhave > 75,
+      result: `${Math.round(r.pa_ehave)} lux`,
+      passed: r.pa_ehave > 75,
       unit: 'lux',
-      source: r ? 'dump' : 'dump',
+      source: 'dump',
     },
     {
       // EN 12193: Uniformity on playing area (Emin / Eavg)
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
       requirement: '> 0,50',
-      result: paU != null ? fmtDe(paU) : '—',
-      passed: paU != null ? paU > 0.5 : true,
-      source: r ? 'dump' : 'dump',
+      result: fmtDe(r.pa_u),
+      passed: r.pa_u > 0.5,
+      source: 'dump',
     },
     {
       // EN 12193: Glare rating (threshold increment)
       label: 'Blendindex R',
       subscript: 'G',
       requirement: '< 55',
-      result: rg != null ? fmtDe(rg, 1) : '—',
-      passed: rg != null ? rg < 55 : true,
-      source: rg != null ? 'dump' : 'invented',
+      result: fmtDe(r.rg, 1),
+      passed: r.rg < 55,
+      source: 'dump',
     },
     {
-      // EN 12193: Ratio of total area to playing area illuminance
+      // EN 12193: TA/PA illuminance ratio — pre-computed by server
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
-      result: taPaIllum != null ? `${Math.round(taPaIllum)} %` : '—',
-      passed: taPaIllum != null ? taPaIllum > 75 : true,
-      source: taPaIllum != null ? 'dump' : 'invented',
+      result: `${Math.round(taPaIllum)} %`,
+      passed: taPaIllum > 75,
+      source: 'dump',
     },
     {
-      // EN 12193: Ratio of total area to playing area uniformity
+      // EN 12193: TA/PA uniformity ratio — pre-computed by server
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
-      result: taPaUnif != null ? `${Math.round(taPaUnif)} %` : '—',
-      passed: taPaUnif != null ? taPaUnif > 75 : true,
-      source: taPaUnif != null ? 'dump' : 'invented',
+      result: `${Math.round(taPaUnif)} %`,
+      passed: taPaUnif > 75,
+      source: 'dump',
     },
     {
-      // Info: min/max ratio from raw calculation points
+      // Info: Emin/Emax ratio on playing area
       label: 'Ungleichmäßigkeit E',
       subscript: 'min/max',
       requirement: '',
-      result: minMaxRatio != null ? fmtDe(minMaxRatio) : '—',
+      result: r.pa_ehmax > 0 ? fmtDe(r.pa_ehmin / r.pa_ehmax) : '—',
       passed: true,
       source: 'dump',
     },
     {
-      // Info: minimum illuminance from raw calculation points
+      // Info: minimum illuminance on playing area
       label: 'E',
       subscript: 'min',
       requirement: '',
-      result: eMin != null ? `${fmtDe(eMin, 1)} lux` : '—',
+      result: `${fmtDe(r.pa_ehmin, 1)} lux`,
       passed: true,
       source: 'dump',
     },
     {
-      // Info: maximum illuminance from raw calculation points
+      // Info: maximum illuminance on playing area
       label: 'E',
       subscript: 'max',
       requirement: '',
-      result: eMax != null ? `${fmtDe(eMax, 1)} lux` : '—',
+      result: `${fmtDe(r.pa_ehmax, 1)} lux`,
       passed: true,
       source: 'dump',
     },
