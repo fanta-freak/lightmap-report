@@ -113,13 +113,21 @@ const fmtDe = (n: number, decimals = 2) =>
  * Uses the pre-computed results record (rg, ta/pa values) when available.
  * Falls back to computing from raw eh values in calculationPoints.
  */
+/**
+ * Build field metrics table from pre-computed server results.
+ *
+ * Uses PA (playing area) values for the primary EN 12193 criteria,
+ * and TA (total area) values only for the TA/PA ratio rows.
+ * Falls back to recalculating from raw calculationPoints only when
+ * the server didn't provide a results record.
+ */
 export function computeFieldMetrics(
   calculationPoints: CalculationPoint[],
   results?: FieldResult[],
 ): ResultMetric[] {
   const r = results && results.length > 0 ? results[0] : null;
 
-  // --- Gather eh-based stats as fallback ---
+  // --- Fallback: gather stats from raw calculation points (only if no results record) ---
   const ehValues = calculationPoints
     .map((cp) => cp.eh)
     .filter((v): v is number => v != null && typeof v === 'number' && !isNaN(v));
@@ -128,48 +136,54 @@ export function computeFieldMetrics(
   const ehMin = ehValues.length > 0 ? Math.min(...ehValues) : null;
   const ehMax = ehValues.length > 0 ? Math.max(...ehValues) : null;
 
-  // --- Use results record if available, otherwise fall back to eh stats ---
-  const taEhave = r?.ta_ehave ?? ehMean;
-  const taEhmin = r?.ta_ehmin ?? ehMin;
-  const taU = r?.ta_u ?? (taEhave && taEhmin ? taEhmin / taEhave : null);
-  const paEhave = r?.pa_ehave ?? null;
-  const paU = r?.pa_u ?? null;
+  // --- Primary values: use PA (playing area) from server results ---
+  // PA is the primary assessment area per EN 12193
+  const paEhave = r?.pa_ehave ?? ehMean;
+  const paEhmin = r?.pa_ehmin ?? ehMin;
+  const paU = r?.pa_u ?? (paEhave && paEhmin ? paEhmin / paEhave : null);
+
+  // TA (total area) values — used for TA/PA ratio calculations
+  const taEhave = r?.ta_ehave ?? null;
+  const taU = r?.ta_u ?? null;
+
+  // Glare rating — directly from server
   const rg = r?.rg ?? null;
 
-  // Emin/Emax from eh stats (not in results record)
-  const eMin = ehMin ?? taEhmin;
+  // Emin/Emax from raw calculation points (for info rows, not norm criteria)
+  const eMin = ehMin ?? paEhmin;
   const eMax = ehMax;
   const minMaxRatio = eMin != null && eMax != null && eMax > 0 ? eMin / eMax : null;
 
-  // Ta/Pa illuminance ratio
+  // TA/PA ratios — how well the total area compares to playing area
   const taPaIllum = taEhave != null && paEhave != null && paEhave > 0
     ? (taEhave / paEhave) * 100 : null;
-
-  // Ta/Pa uniformity ratio
   const taPaUnif = taU != null && paU != null && paU > 0
     ? (taU / paU) * 100 : null;
 
-  if (taEhave == null) return []; // No data at all
+  if (paEhave == null) return []; // No data at all
 
   const metrics: ResultMetric[] = [
     {
+      // EN 12193: Average maintained illuminance on playing area
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
       requirement: '> 75 lux',
-      result: `${Math.round(taEhave)} lux`,
-      passed: taEhave > 75,
+      result: `${Math.round(paEhave)} lux`,
+      passed: paEhave > 75,
       unit: 'lux',
       source: r ? 'dump' : 'dump',
     },
     {
+      // EN 12193: Uniformity on playing area (Emin / Eavg)
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
       requirement: '> 0,50',
-      result: taU != null ? fmtDe(taU) : '—',
-      passed: taU != null ? taU > 0.5 : true,
+      result: paU != null ? fmtDe(paU) : '—',
+      passed: paU != null ? paU > 0.5 : true,
       source: r ? 'dump' : 'dump',
     },
     {
+      // EN 12193: Glare rating (threshold increment)
       label: 'Blendindex R',
       subscript: 'G',
       requirement: '< 55',
@@ -178,6 +192,7 @@ export function computeFieldMetrics(
       source: rg != null ? 'dump' : 'invented',
     },
     {
+      // EN 12193: Ratio of total area to playing area illuminance
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
@@ -186,6 +201,7 @@ export function computeFieldMetrics(
       source: taPaIllum != null ? 'dump' : 'invented',
     },
     {
+      // EN 12193: Ratio of total area to playing area uniformity
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
       requirement: '> 75 %',
@@ -194,6 +210,7 @@ export function computeFieldMetrics(
       source: taPaUnif != null ? 'dump' : 'invented',
     },
     {
+      // Info: min/max ratio from raw calculation points
       label: 'Ungleichmäßigkeit E',
       subscript: 'min/max',
       requirement: '',
@@ -202,6 +219,7 @@ export function computeFieldMetrics(
       source: 'dump',
     },
     {
+      // Info: minimum illuminance from raw calculation points
       label: 'E',
       subscript: 'min',
       requirement: '',
@@ -210,6 +228,7 @@ export function computeFieldMetrics(
       source: 'dump',
     },
     {
+      // Info: maximum illuminance from raw calculation points
       label: 'E',
       subscript: 'max',
       requirement: '',
