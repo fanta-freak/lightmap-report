@@ -55,12 +55,23 @@ export const mockResults: FieldResult[] = [
   {
     id: 1,                                                       // 🟡 INVENTED
     project_id: 4,                                               // 🟢 DUMP
-    ta_ehave: 42.58,                                             // 🟢 DUMP (calc: mean of 273 eh values)
-    ta_ehmin: 0.07,                                              // 🟢 DUMP (calc: min of 273 eh values)
-    ta_u: 0.00,                                                  // 🟢 DUMP (calc: 0.07 / 42.58 ≈ 0.002)
+    // Playing Area (PA) — primary EN 12193 assessment area
     pa_ehave: 42.58,                                             // 🟢 DUMP (no PA boundary → same as TA)
     pa_ehmin: 0.07,                                              // 🟢 DUMP (no PA boundary → same as TA)
+    pa_ehmax: 120.0,                                             // 🟡 INVENTED (mock max value)
     pa_u: 0.00,                                                  // 🟢 DUMP (no PA boundary → same as TA)
+    // Total Area (TA) — includes 2.5m buffer around field
+    ta_ehave: 42.58,                                             // 🟢 DUMP (calc: mean of 273 eh values)
+    ta_ehmin: 0.07,                                              // 🟢 DUMP (calc: min of 273 eh values)
+    ta_ehmax: 120.0,                                             // 🟡 INVENTED (mock max value)
+    ta_u: 0.00,                                                  // 🟢 DUMP (calc: 0.07 / 42.58 ≈ 0.002)
+    // TA/PA ratios — pre-computed by calculation server
+    ta_to_pa_ehave: 1.0,                                         // 🟡 INVENTED (same grid → ratio = 1)
+    ta_to_pa_u: 1.0,                                             // 🟡 INVENTED (same grid → ratio = 1)
+    // Facade metrics
+    evmax: 0.0,                                                  // 🟡 INVENTED (no facade data in mock)
+    ksmax: 0.0,                                                  // 🟡 INVENTED (no facade data in mock)
+    // Glare rating
     rg: null as unknown as number,                               // ❌ not computable from eh grid
   },
 ];
