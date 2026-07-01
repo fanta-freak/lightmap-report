@@ -7,6 +7,7 @@ import { FieldResultsSection } from '../components/sections/FieldResultsSection'
 import { ResidentsSection } from '../components/sections/ResidentsSection';
 import { LuminaireSection } from '../components/sections/LuminaireSection';
 import { GlossarySection } from '../components/sections/GlossarySection';
+import { AppendixSection } from '../components/sections/AppendixSection';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useReportData } from '../hooks/useReportData';
@@ -136,8 +137,13 @@ export function ReportDetailPage() {
             <LuminaireSection data={data} />
           </div>
 
-          <div id="glossary" className="py-10 scroll-mt-16 print-break-before">
+          <div id="glossary" className="py-10 border-b border-border scroll-mt-16 print-break-before">
             <GlossarySection terms={data.glossaryTerms} />
+          </div>
+
+          {/* Anhang: eingebettete Sportbeleuchtungs-Broschüre (Kundenwunsch 2026-03) */}
+          <div id="appendix" className="py-10 scroll-mt-16 print-break-before">
+            <AppendixSection />
           </div>
         </main>
       </div>
