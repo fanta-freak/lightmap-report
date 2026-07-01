@@ -313,8 +313,10 @@ body {
     height: auto !important;
   }
 
+  /* Kundenwunsch 2026-03: Druckränder schmaler als der Browser-Default,
+     damit Karten/Tabellen mehr Breite bekommen (vorher 15mm 20mm). */
   @page {
-    margin: 15mm 20mm;
+    margin: 8mm 10mm;
     @bottom-center {
       content: "© Signify GmbH";
     }

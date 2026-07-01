@@ -157,6 +157,8 @@ export interface ResultMetric {
   label: string;
   /** Subscript text, e.g. "m" for E_m */
   subscript?: string;
+  /** Definitionsformel, z.B. "Emin / Em" — als kleine Erläuterung unter dem Label. */
+  formula?: string;
   requirement: string;
   result: string;
   passed: boolean;

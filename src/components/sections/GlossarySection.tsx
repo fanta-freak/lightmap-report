@@ -53,7 +53,9 @@ export function GlossarySection({ terms }: GlossarySectionProps) {
 }
 
 function GlossaryItem({ term }: { term: GlossaryTerm }) {
-  const [open, setOpen] = useState(false);
+  // Standardmäßig aufgeklappt: der Report wird v.a. als PDF gedruckt, und
+  // eingeklappte Definitionen würden im Druck fehlen (Kunden-PDF: leere Seite).
+  const [open, setOpen] = useState(true);
 
   return (
     <div className="px-8">

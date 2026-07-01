@@ -17,7 +17,9 @@ import type {
 } from '../types';
 
 /* ─── Color palette for luminaire type dots ─── */
-const DOT_COLORS = [
+// Exportiert, damit Mast-Tabelle, Karte und Leuchten-Datenblätter dieselbe
+// Farbkodierung pro Leuchtentyp verwenden können (Kundenwunsch 2026-03).
+export const DOT_COLORS = [
   '#F97316', // orange
   '#3B82F6', // blue
   '#10B981', // green
@@ -139,6 +141,7 @@ export function computeFieldMetrics(
       // EN 12193: Uniformity on playing area (Emin / Eavg)
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
+      formula: 'Eₘᵢₙ / Ēₘ',
       requirement: '≥ 0,50',
       result: fmtDe(r.pa_u),
       passed: r.pa_u >= 0.5,
@@ -157,6 +160,7 @@ export function computeFieldMetrics(
       // EN 12193: TA/PA illuminance ratio — pre-computed by server
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
+      formula: 'Ēₘ(Ta) / Ēₘ(Pa)',
       requirement: '≥ 75 %',
       result: `${Math.round(taPaIllum)} %`,
       passed: taPaIllum >= 75,
@@ -166,6 +170,7 @@ export function computeFieldMetrics(
       // EN 12193: TA/PA uniformity ratio — pre-computed by server
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
+      formula: 'Uₒ(Ta) / Uₒ(Pa)',
       requirement: '≥ 75 %',
       result: `${Math.round(taPaUnif)} %`,
       passed: taPaUnif >= 75,
@@ -175,6 +180,7 @@ export function computeFieldMetrics(
       // Info: Emin/Emax ratio on playing area
       label: 'Ungleichmäßigkeit E',
       subscript: 'min/max',
+      formula: 'Eₘᵢₙ / Eₘₐₓ',
       requirement: '',
       result: r.pa_ehmax > 0 ? fmtDe(r.pa_ehmin / r.pa_ehmax) : '—',
       passed: true,

@@ -1,5 +1,6 @@
 import type { ReportData } from '../../types';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
+import { DOT_COLORS } from '../../utils/dataFallbacks';
 
 interface LuminaireSectionProps {
   data: ReportData;
@@ -99,15 +100,23 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
         </div>
       </div>
 
-      {/* Luminaire datasheets */}
+      {/* Luminaire datasheets — grid fließt bei >2 Leuchtentypen automatisch
+          in weitere Zeilen (2 Karten pro Reihe). */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {luminaires.map((lum) => (
+        {luminaires.map((lum, i) => (
           <div
             key={lum.id}
             className="bg-card-white rounded-lg border border-border overflow-hidden"
           >
             <div className="px-6 py-4 border-b border-gray-100 bg-bg-light">
-              <h4 className="text-base font-bold text-signify-dark">{lum.name}</h4>
+              <div className="flex items-center gap-2">
+                {/* Farbkodierung wie auf der Karte / in der Leuchtenliste */}
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: DOT_COLORS[i % DOT_COLORS.length] }}
+                />
+                <h4 className="text-base font-bold text-signify-dark">{lum.name}</h4>
+              </div>
               <p className="text-xs text-signify-gray mt-0.5">Leuchtendatenblatt</p>
             </div>
             <div className="px-6 py-5">

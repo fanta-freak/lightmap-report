@@ -11,10 +11,17 @@ interface FieldDetailSectionProps {
 }
 
 export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: FieldDetailSectionProps) {
-  const { project, lightpoints, directions, calculationPoints } = data;
+  const { project, lightpoints, directions, calculationPoints, luminaireList } = data;
   const halfW = project.field_width / 2;
   const halfL = project.field_length / 2;
   const swapped = detectAxisSwap(calculationPoints, project.field_length, project.field_width);
+  // Kundenwunsch 2026-03: bei mehr als 6 Masten die Zeilen enger setzen,
+  // damit die Tabelle auf eine Druckseite passt.
+  const compact = lightpoints.length > 6;
+  const rowPad = compact ? 'py-1.5' : 'py-3';
+  // Farbkodierung wie auf der Karte: pro Mast dieselbe Farbe wie in der
+  // Leuchtenliste (luminaireList ist reihenfolgegleich mit lightpoints).
+  const mastColors = luminaireList.map((e) => e.colorDot);
 
   return (
     <section className="space-y-8">
@@ -79,6 +86,7 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
         halfWidth={halfW}
         halfLength={halfL}
         masts={lightpoints}
+        mastColors={mastColors}
         directions={directions}
         swapped={swapped}
         showMastLabels={true}
@@ -102,16 +110,13 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                   Mast
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  X (Breite)
+                  X
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  Y (Länge)
+                  Y
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
                   Höhe
-                </th>
-                <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  Neigung
                 </th>
                 <th className="text-left py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider pl-4">
                   Leuchtentyp
@@ -124,27 +129,31 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                   key={mast.id}
                   className="border-b border-gray-50 hover:bg-signify-teal/5 transition-colors"
                 >
-                  <td className="py-3">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-signify-dark text-white text-sm font-bold">
+                  <td className={rowPad}>
+                    <span className={`inline-flex items-center justify-center rounded-full bg-signify-dark text-white font-bold ${compact ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'}`}>
                       {i + 1}
                     </span>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{mast.x.toFixed(1).replace('.', ',')} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{mast.y.toFixed(1).replace('.', ',')} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{mast.mastheight} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
-                    <SourceBadge source="dump">{mast.tilt}°</SourceBadge>
-                  </td>
-                  <td className="py-3 text-left pl-4">
-                    <span className="text-sm text-signify-dark truncate block max-w-[260px]" title={mast.ldt_file_name ?? ''}>
-                      {mast.ldt_file_name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
-                    </span>
+                  <td className={`${rowPad} text-left pl-4`}>
+                    <div className="flex items-center gap-2">
+                      {/* Farbkodierung wie auf der Karte / in der Leuchtenliste */}
+                      <span
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: mastColors[i] ?? '#9CA3AF' }}
+                      />
+                      <span className="text-sm text-signify-dark truncate block max-w-[240px]" title={mast.ldt_file_name ?? ''}>
+                        {mast.ldt_file_name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))}
