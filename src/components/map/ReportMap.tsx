@@ -130,7 +130,8 @@ export function ReportMap({
 
       arrowFeatures.push({
         type: 'Feature' as const,
-        properties: {},
+        // Pfeil in der Farbe des Leuchtentyps (Kundenwunsch 2026-05, S33)
+        properties: { color: mastColors[i] ?? '#F97316' },
         geometry: {
           type: 'LineString' as const,
           coordinates: [fromLngLat, toLngLat],
@@ -257,7 +258,8 @@ export function ReportMap({
           type: 'line',
           source: 'arrows',
           paint: {
-            'line-color': '#F97316',
+            // Farbe pro Leuchtentyp (Fallback Orange), analog zu den Mast-Markern
+            'line-color': ['coalesce', ['get', 'color'], '#F97316'],
             'line-width': 2,
             'line-opacity': 0.85,
           },
