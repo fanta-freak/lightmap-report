@@ -8,6 +8,10 @@ interface LuminaireSectionProps {
 
 export function LuminaireSection({ data }: LuminaireSectionProps) {
   const { luminaireList, luminaires, project } = data;
+  // Eindeutige Mastpositionen (mehrere Leuchten können auf einem Mast sitzen) — S30
+  const mastCount = new Set(
+    data.lightpoints.map((lp) => `${lp.x.toFixed(1)}|${lp.y.toFixed(1)}`)
+  ).size;
 
   return (
     <section className="space-y-8">
@@ -27,7 +31,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
         <div className="px-8 py-5 border-b border-gray-100 bg-bg-light">
           <h3 className="text-lg font-bold text-signify-dark">Leuchtenpositionen</h3>
           <p className="text-xs text-signify-gray mt-0.5">
-            {luminaireList.length} Leuchten auf {data.lightpoints.length} Masten
+            {luminaireList.length} Leuchten auf {mastCount} Masten
           </p>
         </div>
         <div className="px-4 py-4 overflow-x-auto">

@@ -49,13 +49,13 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <LimitCard
-                  label="Max. E_v"
+                  label="Max. E"
                   subscript="v"
                   value={`${laiRequirements.evMaxLimit} lux`}
                   source="pdf"
                 />
                 <LimitCard
-                  label="Max. k_s"
+                  label="Max. k"
                   subscript="s"
                   value={`${laiRequirements.ksMaxLimit}`}
                   source="pdf"
@@ -133,6 +133,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
         halfWidth={halfW}
         halfLength={halfL}
         masts={lightpoints}
+        mastColors={data.luminaireList.map((e) => e.colorDot)}
         directions={directions}
         buildingFacades={buildingFacades}
         swapped={swapped}
@@ -232,10 +233,13 @@ function InfoRow({ label, value, source }: { label: string; value: string; sourc
   );
 }
 
-function LimitCard({ label, value, source }: { label: string; subscript?: string; value: string; source?: DataSource }) {
+function LimitCard({ label, subscript, value, source }: { label: string; subscript?: string; value: string; source?: DataSource }) {
   return (
     <div className="bg-bg-light rounded p-3 border border-gray-100 text-center">
-      <p className="text-xs text-signify-gray mb-1">{label}</p>
+      <p className="text-xs text-signify-gray mb-1">
+        {label}
+        {subscript && <sub className="text-[0.65rem]">{subscript}</sub>}
+      </p>
       <p className="text-lg font-bold text-signify-dark">
         {source ? <SourceBadge source={source}>{value}</SourceBadge> : value}
       </p>

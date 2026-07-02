@@ -1,4 +1,4 @@
-import type { ReportData, FieldSpecification } from '../../types';
+import type { ReportData, FieldSpecification, ResultMetric } from '../../types';
 import { ReportMap } from '../map/ReportMap';
 import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
@@ -8,9 +8,10 @@ interface FieldDetailSectionProps {
   fieldNumber: number;
   spec: FieldSpecification;
   geoCenter: GeoCenter;
+  metrics: ResultMetric[];
 }
 
-export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: FieldDetailSectionProps) {
+export function FieldDetailSection({ data, fieldNumber, spec, geoCenter, metrics }: FieldDetailSectionProps) {
   const { project, lightpoints, directions, calculationPoints, luminaireList } = data;
   const halfW = project.field_width / 2;
   const halfL = project.field_length / 2;
@@ -22,6 +23,11 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
   // Farbkodierung wie auf der Karte: pro Mast dieselbe Farbe wie in der
   // Leuchtenliste (luminaireList ist reihenfolgegleich mit lightpoints).
   const mastColors = luminaireList.map((e) => e.colorDot);
+  // Vorgabewerte (Ēm, Uo) aus den Kenngrößen ziehen und den Vergleichsoperator
+  // (≥/>) entfernen — Kundenwunsch 2026-05 (S28): Vorgabe im Report ausgeben.
+  const stripCmp = (s?: string) => (s ?? '').replace(/^[≥>≤<]\s*/, '').trim();
+  const emTarget = stripCmp(metrics.find((m) => m.label.startsWith('Mittlerer Wartungswert'))?.requirement);
+  const uoTarget = stripCmp(metrics.find((m) => m.label.startsWith('Gleichmäßigkeit'))?.requirement);
 
   return (
     <section className="space-y-8">
@@ -53,6 +59,9 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
             <SpecRow label="Farbtemperatur" value={spec.colorTemperature} source="pdf" />
             <SpecRow label="Wartungsfaktor" value={spec.maintenanceFactor.toFixed(2).replace('.', ',')} source="pdf" />
             <SpecRow label="Masthöhe" value={`${spec.mountingHeight} m`} source="dump" />
+            {/* Vorgabewerte laut Norm/Eingabe (S28) */}
+            {emTarget && <SpecRow label="Vorgabe Ēm" value={emTarget} source="pdf" />}
+            {uoTarget && <SpecRow label="Vorgabe Uo (Emin/Ēm)" value={uoTarget} source="pdf" />}
           </div>
         </div>
 

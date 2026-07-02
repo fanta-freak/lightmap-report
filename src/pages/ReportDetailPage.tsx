@@ -32,6 +32,13 @@ export function ReportDetailPage() {
 
   const data = report.payload;
 
+  // Mastanzahl = eindeutige Mastpositionen, nicht Leuchtenzahl (Kundenwunsch
+  // 2026-05, S30: bei mehreren Leuchten pro Mast zählte "Masten" bisher die
+  // Leuchten). Positionen auf 0,1 m gerundet zusammenfassen.
+  const mastCount = new Set(
+    data.lightpoints.map((lp) => `${lp.x.toFixed(1)}|${lp.y.toFixed(1)}`)
+  ).size;
+
   const handlePdfExport = () => {
     window.print();
   };
@@ -93,7 +100,7 @@ export function ReportDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border rounded overflow-hidden">
             <StatCard label="Feldfläche" value={`${data.project.field_area.toLocaleString('de-DE')} m²`} source="dump" />
             <StatCard label="Leistung" value={`${data.project.project_wattage.toLocaleString('de-DE')} W`} source="dump" />
-            <StatCard label="Masten" value={String(data.lightpoints.length)} source="dump" />
+            <StatCard label="Masten" value={String(mastCount)} source="dump" />
             <StatCard label="Leuchten" value={String(data.luminaireList.length)} source="dump" />
           </div>
 
@@ -113,6 +120,7 @@ export function ReportDetailPage() {
               fieldNumber={1}
               spec={data.fieldSpec}
               geoCenter={data.geoCenter}
+              metrics={data.fieldMetrics}
             />
           </div>
 
