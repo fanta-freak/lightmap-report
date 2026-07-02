@@ -7,15 +7,17 @@
  * Broschürenseiten als Bilder ans Ende des Reports ein — so ergibt ein
  * einziger Druckvorgang eine gemeinsame PDF.
  *
+ * Inhalt: offizielle Signify-Broschüre „Beleuchtung eines Fußballfeldes" (9 S.).
+ *
  * ── Broschüre austauschen ──────────────────────────────────────────────
  * Die Seitenbilder liegen unter `public/brochure/page-N.jpg`. Zum Tausch
- * gegen eine andere Broschüre (z.B. die offizielle Signify-Fußballbroschüre)
- * einfach die JPGs ersetzen und `BROCHURE_PAGE_COUNT` anpassen. Rastern z.B.
- * mit:  pdftoppm -jpeg -scale-to-x 1600 -scale-to-y -1 brochure.pdf public/brochure/page
+ * gegen eine andere Broschüre einfach die JPGs ersetzen und
+ * `BROCHURE_PAGE_COUNT` anpassen. Rastern z.B. mit:
+ *   pdftoppm -jpeg -scale-to-x 1600 -scale-to-y -1 brochure.pdf public/brochure/page
  */
 
 // Anzahl der Broschürenseiten (public/brochure/page-1.jpg … page-N.jpg).
-const BROCHURE_PAGE_COUNT = 8;
+const BROCHURE_PAGE_COUNT = 9;
 
 export function AppendixSection() {
   const pages = Array.from({ length: BROCHURE_PAGE_COUNT }, (_, i) => i + 1);
