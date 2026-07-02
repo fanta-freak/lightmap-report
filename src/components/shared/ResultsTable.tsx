@@ -42,7 +42,7 @@ export function ResultsTable({ title, subtitle, metrics }: ResultsTableProps) {
                 key={index}
                 className="border-b border-gray-50 hover:bg-signify-teal/3 transition-colors"
               >
-                <td className="py-4 pr-4">
+                <td className="py-2.5 pr-4">
                   <span className="text-base text-signify-dark font-medium">
                     {metric.label}
                     {metric.subscript && (
@@ -51,20 +51,26 @@ export function ResultsTable({ title, subtitle, metrics }: ResultsTableProps) {
                       </sub>
                     )}
                   </span>
+                  {/* Definitionsformel als kleine Erl\u00e4uterung (Kundenwunsch 2026-03) */}
+                  {metric.formula && (
+                    <span className="block text-xs text-signify-gray font-mono mt-0.5">
+                      {metric.formula}
+                    </span>
+                  )}
                 </td>
-                <td className="py-4 text-right">
+                <td className="py-2.5 text-right">
                   <span className="text-sm text-signify-gray font-mono">
                     {metric.requirement ? <SourceBadge source="pdf">{metric.requirement}</SourceBadge> : '\u2014'}
                   </span>
                 </td>
-                <td className="py-4 text-right">
+                <td className="py-2.5 text-right">
                   <span className={`text-base font-semibold font-mono ${
                     metric.passed ? 'text-signify-dark' : 'text-fail-red'
                   }`}>
                     <SourceBadge source={metric.source ?? 'pdf'}>{metric.result}</SourceBadge>
                   </span>
                 </td>
-                <td className="py-4 text-center">
+                <td className="py-2.5 text-center">
                   {metric.requirement && (
                     <PassFailBadge passed={metric.passed} size="md" />
                   )}

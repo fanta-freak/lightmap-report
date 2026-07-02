@@ -80,11 +80,11 @@ export const mockResults: FieldResult[] = [
 // Mixed sources — calculated from dump where possible, requirements from PDF
 export const mockFieldMetrics: ResultMetric[] = [
   { label: 'Mittlerer Wartungswert E', subscript: 'm', requirement: '> 75 lux', result: '43 lux', passed: false, source: 'dump' },           // 🟢 DUMP (mean of 273 eh)
-  { label: 'Gleichmäßigkeit E', subscript: 'min/m', requirement: '> 0,50', result: '0,00', passed: false, source: 'dump' },                   // 🟢 DUMP (0.07/42.58)
+  { label: 'Gleichmäßigkeit E', subscript: 'min/m', formula: 'Eₘᵢₙ / Ēₘ', requirement: '> 0,50', result: '0,00', passed: false, source: 'dump' },                   // 🟢 DUMP (0.07/42.58)
   { label: 'Blendindex R', subscript: 'G', requirement: '< 55', result: '—', passed: true, source: 'invented' },                             // ❌ not computable
-  { label: 'Verhältnis Beleuchtungsstärke T', subscript: 'a/Pa', requirement: '> 75 %', result: '—', passed: true, source: 'invented' },      // ❌ no PA boundary
-  { label: 'Verhältnis Gleichmäßigkeit T', subscript: 'a/Pa', requirement: '> 75 %', result: '—', passed: true, source: 'invented' },         // ❌ no PA boundary
-  { label: 'Ungleichmäßigkeit E', subscript: 'min/max', requirement: '', result: '0,00', passed: true, source: 'dump' },                      // 🟢 DUMP (0.07/210.48)
+  { label: 'Verhältnis Beleuchtungsstärke T', subscript: 'a/Pa', formula: 'Ēₘ(Ta) / Ēₘ(Pa)', requirement: '> 75 %', result: '—', passed: true, source: 'invented' },      // ❌ no PA boundary
+  { label: 'Verhältnis Gleichmäßigkeit T', subscript: 'a/Pa', formula: 'Uₒ(Ta) / Uₒ(Pa)', requirement: '> 75 %', result: '—', passed: true, source: 'invented' },         // ❌ no PA boundary
+  { label: 'Ungleichmäßigkeit E', subscript: 'min/max', formula: 'Eₘᵢₙ / Eₘₐₓ', requirement: '', result: '0,00', passed: true, source: 'dump' },                      // 🟢 DUMP (0.07/210.48)
   { label: 'E', subscript: 'min', requirement: '', result: '0,1 lux', passed: true, source: 'dump' },                                        // 🟢 DUMP
   { label: 'E', subscript: 'max', requirement: '', result: '210,5 lux', passed: true, source: 'dump' },                                      // 🟢 DUMP
 ];
