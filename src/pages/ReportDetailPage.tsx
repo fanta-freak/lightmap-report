@@ -7,6 +7,7 @@ import { FieldResultsSection } from '../components/sections/FieldResultsSection'
 import { ResidentsSection } from '../components/sections/ResidentsSection';
 import { LuminaireSection } from '../components/sections/LuminaireSection';
 import { GlossarySection } from '../components/sections/GlossarySection';
+import { AbschnittSicherung } from '../components/shared/AbschnittSicherung';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useReportData } from '../hooks/useReportData';
@@ -108,37 +109,47 @@ export function ReportDetailPage() {
         {/* ─── Report sections ─── */}
         <main className="space-y-0">
           <div id="field-detail" className="py-10 border-b border-border scroll-mt-16 print-break-before">
-            <FieldDetailSection
-              data={data}
-              fieldNumber={1}
-              spec={data.fieldSpec}
-              geoCenter={data.geoCenter}
-            />
+            <AbschnittSicherung name="Feldbeschreibung">
+              <FieldDetailSection
+                data={data}
+                fieldNumber={1}
+                spec={data.fieldSpec}
+                geoCenter={data.geoCenter}
+              />
+            </AbschnittSicherung>
           </div>
 
           <div id="field-results" className="py-10 border-b border-border scroll-mt-16 print-break-before">
-            <FieldResultsSection
-              data={data}
-              fieldNumber={1}
-              metrics={data.fieldMetrics}
-            />
+            <AbschnittSicherung name="Berechnungsergebnis">
+              <FieldResultsSection
+                data={data}
+                fieldNumber={1}
+                metrics={data.fieldMetrics}
+              />
+            </AbschnittSicherung>
           </div>
 
           <div id="residents" className="py-10 border-b border-border scroll-mt-16 print-break-before">
-            <ResidentsSection
-              data={data}
-              laiRequirements={data.laiRequirements}
-              geoCenter={data.geoCenter}
-              buildingFacades={data.buildingFacades}
-            />
+            <AbschnittSicherung name="Anwohner">
+              <ResidentsSection
+                data={data}
+                laiRequirements={data.laiRequirements}
+                geoCenter={data.geoCenter}
+                buildingFacades={data.buildingFacades}
+              />
+            </AbschnittSicherung>
           </div>
 
           <div id="luminaires" className="py-10 border-b border-border scroll-mt-16 print-break-before">
-            <LuminaireSection data={data} />
+            <AbschnittSicherung name="Leuchten">
+              <LuminaireSection data={data} />
+            </AbschnittSicherung>
           </div>
 
           <div id="glossary" className="py-10 scroll-mt-16 print-break-before">
-            <GlossarySection terms={data.glossaryTerms} />
+            <AbschnittSicherung name="Glossar">
+              <GlossarySection terms={data.glossaryTerms} />
+            </AbschnittSicherung>
           </div>
         </main>
       </div>

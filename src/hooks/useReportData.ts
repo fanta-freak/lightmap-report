@@ -23,11 +23,45 @@ interface UseReportDataResult {
  * - Synthesize missing luminaireList from lightpoints + directions + luminaires
  * - Auto-compute fieldMetrics from results[] + calculationPoints if empty
  */
+/**
+ * Zahlenfelder retten, die als Text ankommen.
+ *
+ * 2026-08-07: Reports von vor dem 20.05.2026 tragen in leeren Zahlenfeldern
+ * den Text `"Test"` — der Sender ersetzte damals jedes fehlende Feld durch
+ * diesen Platzhalter. In Koordinaten wird daraus NaN, die Karte wirft
+ * `Invalid LngLat object: (NaN, Infinity)`, React bricht ab und der Nutzer
+ * sieht eine weisse Seite (nachgewiesen an Report 10). Derselbe String hat
+ * auch die Reportliste in der API abgeraeumt.
+ *
+ * Aus einem unbrauchbaren Wert wird hier `null`. Die Anzeige zeigt dann
+ * einen Gedankenstrich, und wer die Koordinaten braucht, kann den Punkt
+ * ueberspringen — beides besser als eine leere Seite.
+ */
+function zahlOderNull(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v === 'string') {
+    const n = Number(v.replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function punkteBereinigen<T extends { x?: unknown; y?: unknown }>(liste: T[] | undefined): T[] {
+  if (!Array.isArray(liste)) return [];
+  return liste
+    .map((e) => ({ ...e, x: zahlOderNull(e.x), y: zahlOderNull(e.y) }))
+    .filter((e) => e.x !== null && e.y !== null) as unknown as T[];
+}
+
 function applyFallbacks(report: ReportDetail): ReportDetail {
   const p = report.payload;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = p as any;
+
+  // Masten und Rechenpunkte von Textwerten befreien (s. zahlOderNull).
+  const lightpoints = punkteBereinigen(p.lightpoints);
+  const calculationPoints = punkteBereinigen(p.calculationPoints);
 
   // Map snake_case key → camelCase (API sends building_facades, frontend expects buildingFacades)
   const buildingFacades =
@@ -41,13 +75,13 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
   const luminaireList =
     p.luminaireList && p.luminaireList.length > 0
       ? p.luminaireList
-      : synthesizeLuminaireList(p.lightpoints, p.directions, p.luminaires);
+      : synthesizeLuminaireList(lightpoints, p.directions, p.luminaires);
 
   // Auto-compute fieldMetrics from results[] + calculationPoints if empty
   const fieldMetrics =
     p.fieldMetrics && p.fieldMetrics.length > 0
       ? p.fieldMetrics
-      : computeFieldMetrics(p.calculationPoints, p.results);
+      : computeFieldMetrics(calculationPoints, p.results);
 
   // Always attach glossary from mock data (not expected from API)
   const glossaryTerms =
@@ -59,6 +93,8 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
     ...report,
     payload: {
       ...p,
+      lightpoints,
+      calculationPoints,
       buildingFacades,
       luminaireList,
       fieldMetrics,
