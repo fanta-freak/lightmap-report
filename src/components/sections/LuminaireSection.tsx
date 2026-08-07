@@ -1,5 +1,6 @@
 import type { ReportData } from '../../types';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
+import { grosseZahl, ersteZahl, zahl } from '../../utils/format';
 
 interface LuminaireSectionProps {
   data: ReportData;
@@ -91,7 +92,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                   Gesamt: {luminaireList.length} Leuchten
                 </td>
                 <td colSpan={3} className="py-3 px-3 text-right text-sm font-bold text-signify-dark">
-                  Gesamtleistung: <SourceBadge source="dump">{project.project_wattage.toLocaleString('de-DE')} W</SourceBadge>
+                  Gesamtleistung: <SourceBadge source="dump">{grosseZahl(project.project_wattage)} W</SourceBadge>
                 </td>
               </tr>
             </tfoot>
@@ -121,8 +122,8 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
               </div>
 
               <div className="space-y-3">
-                <DataRow label="Lichtstrom" value={`${lum.flux[0].toLocaleString('de-DE')} lm`} source="dump" />
-                <DataRow label="Leistung" value={`${lum.wattage[0].toLocaleString('de-DE')} W`} source="dump" />
+                <DataRow label="Lichtstrom" value={`${ersteZahl(lum.flux)} lm`} source="dump" />
+                <DataRow label="Leistung" value={`${ersteZahl(lum.wattage)} W`} source="dump" />
                 <DataRow label="Lampentyp" value={lum.lamp_type.join(', ')} source="dump" />
                 <DataRow label="Farbtemperatur" value={lum.colour.join(', ')} source="dump" />
                 <DataRow label="Farbwiedergabe" value={`Ra ${lum.rendering.join(', ')}`} source="dump" />
@@ -137,8 +138,9 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
   );
 }
 
-function fmt(n: number): string {
-  return n.toFixed(1).replace('.', ',');
+function fmt(n: unknown): string {
+  // 2026-08-06: haelt fehlende Werte aus, siehe utils/format.ts
+  return zahl(n, 1);
 }
 
 function DataRow({ label, value, source }: { label: string; value: string; source?: DataSource }) {

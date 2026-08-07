@@ -10,6 +10,7 @@ import { GlossarySection } from '../components/sections/GlossarySection';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useReportData } from '../hooks/useReportData';
+import { grosseZahl } from '../utils/format';
 
 function StatCard({ label, value, source }: { label: string; value: string; source?: DataSource }) {
   return (
@@ -90,8 +91,8 @@ export function ReportDetailPage() {
 
           {/* Project meta row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border rounded overflow-hidden">
-            <StatCard label="Feldfläche" value={`${data.project.field_area.toLocaleString('de-DE')} m²`} source="dump" />
-            <StatCard label="Leistung" value={`${data.project.project_wattage.toLocaleString('de-DE')} W`} source="dump" />
+            <StatCard label="Feldfläche" value={`${grosseZahl(data.project.field_area)} m²`} source="dump" />
+            <StatCard label="Leistung" value={`${grosseZahl(data.project.project_wattage)} W`} source="dump" />
             <StatCard label="Masten" value={String(data.lightpoints.length)} source="dump" />
             <StatCard label="Leuchten" value={String(data.luminaireList.length)} source="dump" />
           </div>

@@ -28,6 +28,12 @@ export interface FieldResult {
   pa_ehave: number;
   /** Playing Area - minimum horizontal illuminance */
   pa_ehmin: number;
+  /** Playing Area - maximum horizontal illuminance.
+   *  2026-08-07 ergaenzt: Der Bericht nahm Emax bis dahin aus dem
+   *  Rasterfeld, das aber zum jeweils LETZTEN Lauf gehoert und nicht zu dem
+   *  Lauf, dessen Kennzahlen daneben stehen. Die Engine liefert den Wert
+   *  ohnehin mit. */
+  pa_ehmax: number;
   /** Playing Area - uniformity (Emin/Eave) */
   pa_u: number;
   /** Glare Rating RG */

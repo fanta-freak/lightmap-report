@@ -2,6 +2,7 @@ import type { ReportData, FieldSpecification } from '../../types';
 import { ReportMap } from '../map/ReportMap';
 import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
+import { grosseZahl, zahl } from '../../utils/format';
 
 interface FieldDetailSectionProps {
   data: ReportData;
@@ -44,7 +45,7 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
             <SpecRow label="Normgrundlage" value={spec.standard} source="pdf" />
             <SpecRow label="Beleuchtungsklasse" value={spec.lightingClass} source="pdf" />
             <SpecRow label="Farbtemperatur" value={spec.colorTemperature} source="pdf" />
-            <SpecRow label="Wartungsfaktor" value={spec.maintenanceFactor.toFixed(2).replace('.', ',')} source="pdf" />
+            <SpecRow label="Wartungsfaktor" value={zahl(spec.maintenanceFactor, 2)} source="pdf" />
             <SpecRow label="Masthöhe" value={`${spec.mountingHeight} m`} source="dump" />
           </div>
         </div>
@@ -66,7 +67,7 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
             <div className="grid grid-cols-2 gap-4">
               <DimCard label="Länge" value={`${project.field_length} m`} source="dump" />
               <DimCard label="Breite" value={`${project.field_width} m`} source="dump" />
-              <DimCard label="Gesamtfläche" value={`${project.field_area.toLocaleString('de-DE')} m²`} source="dump" />
+              <DimCard label="Gesamtfläche" value={`${grosseZahl(project.field_area)} m²`} source="dump" />
               <DimCard label="Koordinatenbereich" value={`±${halfL} × ±${halfW} m`} source="dump" />
             </div>
           </div>
@@ -130,10 +131,10 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                     </span>
                   </td>
                   <td className="py-3 text-right font-mono text-sm text-signify-dark">
-                    <SourceBadge source="dump">{mast.x.toFixed(1).replace('.', ',')} m</SourceBadge>
+                    <SourceBadge source="dump">{zahl(mast.x, 1)} m</SourceBadge>
                   </td>
                   <td className="py-3 text-right font-mono text-sm text-signify-dark">
-                    <SourceBadge source="dump">{mast.y.toFixed(1).replace('.', ',')} m</SourceBadge>
+                    <SourceBadge source="dump">{zahl(mast.y, 1)} m</SourceBadge>
                   </td>
                   <td className="py-3 text-right font-mono text-sm text-signify-dark">
                     <SourceBadge source="dump">{mast.mastheight} m</SourceBadge>

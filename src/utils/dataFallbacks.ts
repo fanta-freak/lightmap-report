@@ -136,9 +136,25 @@ export function computeFieldMetrics(
   const paU = r?.pa_u ?? null;
   const rg = r?.rg ?? null;
 
-  // Emin/Emax from eh stats (not in results record)
-  const eMin = ehMin ?? taEhmin;
-  const eMax = ehMax;
+  // ── Emin/Emax: aus dem Ergebnissatz, nicht aus dem Rasterfeld ──────────
+  // 2026-08-07 (Rainers Befund "die Zahlen sind falsch zusammengestellt"):
+  // Hier stand `ehMin`, also das Minimum ueber calculationPoints. Das ist
+  // aus zwei Gruenden falsch:
+  //
+  //   1. Das Rasterfeld gehoert nicht zwingend zu DIESEM Lauf. Ein Projekt
+  //      hat genau EINEN Satz Rechenpunkte, den jede neue Berechnung
+  //      ueberschreibt — die Kennzahlen im results-Satz bleiben dagegen je
+  //      Lauf erhalten. Bei Report 841 kamen die Kennzahlen aus Lauf 319
+  //      (Emin 42,7) und das Raster aus Lauf 321 (Emin 0,3), 26 Sekunden
+  //      vorher gerechnet.
+  //   2. Selbst beim passenden Lauf ist das blosse Raster-Minimum nicht die
+  //      Norm-Groesse: `pa_ehmin` ist der Wert der SPIELFLAECHE, den die
+  //      Engine ausweist.
+  //
+  // Ergebnis war ein Bericht, der sich selbst widersprach: Emin 0,3 lux bei
+  // Em 84 lux waere eine Gleichmaessigkeit von 0,004 — ausgewiesen war 0,50.
+  const eMin = r?.pa_ehmin ?? ehMin ?? taEhmin;
+  const eMax = r?.pa_ehmax ?? ehMax;
   const minMaxRatio = eMin != null && eMax != null && eMax > 0 ? eMin / eMax : null;
 
   // Ta/Pa illuminance ratio
@@ -151,13 +167,25 @@ export function computeFieldMetrics(
 
   if (taEhave == null) return []; // No data at all
 
+  // ── Spielflaeche, nicht Gesamtflaeche ──────────────────────────────────
+  // 2026-08-07: Die beiden ersten Zeilen nahmen `ta_*` (Gesamtflaeche =
+  // Spielfeld plus 2,5 m Umlauf). Geprueft wird nach EN 12193 aber die
+  // SPIELFLAECHE, und genau die zeigt auch die Projektseite im Tool.
+  // Wirkung bei Rainers Report 841: Em stand mit 84 lux statt 81,5, und die
+  // Gleichmaessigkeit mit ta_u = 0,50 statt pa_u = 0,52 — dadurch bekam ein
+  // Entwurf ein rotes Kreuz, der die Vorgabe tatsaechlich erfuellt.
+  // Die beiden Ta/Pa-Verhaeltniszeilen weiter unten brauchen die
+  // Gesamtflaechenwerte natuerlich weiterhin.
+  const emWert = paEhave ?? taEhave;
+  const uWert = paU ?? taU;
+
   const metrics: ResultMetric[] = [
     {
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
       requirement: '> 75 lux',
-      result: `${Math.round(taEhave)} lux`,
-      passed: taEhave > 75,
+      result: emWert != null ? `${Math.round(emWert)} lux` : '—',
+      passed: emWert != null ? emWert > 75 : true,
       unit: 'lux',
       source: r ? 'dump' : 'dump',
     },
@@ -165,8 +193,8 @@ export function computeFieldMetrics(
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
       requirement: '> 0,50',
-      result: taU != null ? fmtDe(taU) : '—',
-      passed: taU != null ? taU > 0.5 : true,
+      result: uWert != null ? fmtDe(uWert) : '—',
+      passed: uWert != null ? uWert > 0.5 : true,
       source: r ? 'dump' : 'dump',
     },
     {

@@ -60,6 +60,7 @@ export const mockResults: FieldResult[] = [
     ta_u: 0.00,                                                  // 🟢 DUMP (calc: 0.07 / 42.58 ≈ 0.002)
     pa_ehave: 42.58,                                             // 🟢 DUMP (no PA boundary → same as TA)
     pa_ehmin: 0.07,                                              // 🟢 DUMP (no PA boundary → same as TA)
+    pa_ehmax: 210.48,                                            // 🟢 DUMP (calc: max of 273 eh values)
     pa_u: 0.00,                                                  // 🟢 DUMP (no PA boundary → same as TA)
     rg: null as unknown as number,                               // ❌ not computable from eh grid
   },

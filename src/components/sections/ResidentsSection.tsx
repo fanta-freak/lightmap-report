@@ -3,6 +3,7 @@ import { PassFailBadge } from '../shared/PassFailBadge';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 import { ReportMap } from '../map/ReportMap';
 import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
+import { zahl, groesster } from '../../utils/format';
 
 interface ResidentsSectionProps {
   data: ReportData;
@@ -107,7 +108,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                   Math.max(...buildings.map((b) => b.evmax)) <= laiRequirements.evMaxLimit
                     ? 'text-pass-green' : 'text-fail-red'
                 }`}>
-                  {Math.max(...buildings.map((b) => b.evmax)).toFixed(1).replace('.', ',')} lux
+                  {zahl(groesster(buildings.map((b) => b.evmax)), 1)} lux
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -118,7 +119,7 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                   Math.max(...buildings.map((b) => b.ksmax)) <= laiRequirements.ksMaxLimit
                     ? 'text-pass-green' : 'text-fail-red'
                 }`}>
-                  {Math.max(...buildings.map((b) => b.ksmax)).toFixed(1).replace('.', ',')}
+                  {zahl(groesster(buildings.map((b) => b.ksmax)), 1)}
                 </span>
               </div>
             </div>
@@ -197,12 +198,12 @@ export function ResidentsSection({ data, laiRequirements, geoCenter, buildingFac
                     </td>
                     <td className="py-3 text-right">
                       <span className={`text-sm font-semibold font-mono ${evPassed ? 'text-signify-dark' : 'text-fail-red'}`}>
-                        <SourceBadge source="pdf">{bld.evmax.toFixed(1).replace('.', ',')} lux</SourceBadge>
+                        <SourceBadge source="pdf">{zahl(bld.evmax, 1)} lux</SourceBadge>
                       </span>
                     </td>
                     <td className="py-3 text-right">
                       <span className={`text-sm font-semibold font-mono ${ksPassed ? 'text-signify-dark' : 'text-fail-red'}`}>
-                        <SourceBadge source="dump">{bld.ksmax.toFixed(1).replace('.', ',')}</SourceBadge>
+                        <SourceBadge source="dump">{zahl(bld.ksmax, 1)}</SourceBadge>
                       </span>
                     </td>
                     <td className="py-3 text-center">
