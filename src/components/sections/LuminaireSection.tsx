@@ -1,6 +1,7 @@
 import type { ReportData } from '../../types';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
-import { grosseZahl, ersteZahl, zahl } from '../../utils/format';
+import { grosseZahl, ersteZahl, zahl, KEIN_WERT } from '../../utils/format';
+import { gesamtleistung } from '../../utils/dataFallbacks';
 
 interface LuminaireSectionProps {
   data: ReportData;
@@ -8,6 +9,9 @@ interface LuminaireSectionProps {
 
 export function LuminaireSection({ data }: LuminaireSectionProps) {
   const { luminaireList, luminaires, project } = data;
+
+  // Projekt-Aggregat, sonst Summe der Masten — siehe gesamtleistung().
+  const anlagenLeistung = gesamtleistung(project.project_wattage, data.lightpoints);
 
   return (
     <section className="space-y-8">
@@ -29,6 +33,9 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
           <p className="text-xs text-signify-gray mt-0.5">
             {luminaireList.length} Leuchten auf {data.lightpoints.length} Masten
           </p>
+          {/* 10.08.2026: Die Liste fuehrt genau eine Leuchte je Mast — mehr
+              als eine Leuchte pro Mast kann die Rechenkette bisher nicht
+              abbilden. Lieber ausgesprochen als stillschweigend angenommen. */}
         </div>
         <div className="px-4 py-4 overflow-x-auto">
           <table className="w-full min-w-[700px]">
@@ -48,6 +55,9 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                 </th>
                 <th className="text-right py-3 px-3 text-xs font-semibold text-signify-gray uppercase tracking-wider">
                   Neigung
+                </th>
+                <th className="text-right py-3 px-3 text-xs font-semibold text-signify-gray uppercase tracking-wider">
+                  Leistung
                 </th>
               </tr>
             </thead>
@@ -82,6 +92,11 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                   <td className="py-3 px-3 text-right font-mono text-sm text-signify-dark">
                     <SourceBadge source="dump">{entry.tilt}°</SourceBadge>
                   </td>
+                  <td className="py-3 px-3 text-right font-mono text-sm text-signify-dark">
+                    <SourceBadge source="dump">
+                      {entry.wattage != null ? `${grosseZahl(entry.wattage)} W` : KEIN_WERT}
+                    </SourceBadge>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -91,8 +106,8 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                 <td colSpan={2} className="py-3 px-3 text-sm font-bold text-signify-dark">
                   Gesamt: {luminaireList.length} Leuchten
                 </td>
-                <td colSpan={3} className="py-3 px-3 text-right text-sm font-bold text-signify-dark">
-                  Gesamtleistung: <SourceBadge source="dump">{grosseZahl(project.project_wattage)} W</SourceBadge>
+                <td colSpan={4} className="py-3 px-3 text-right text-sm font-bold text-signify-dark">
+                  Gesamtleistung: <SourceBadge source="dump">{grosseZahl(anlagenLeistung)} W</SourceBadge>
                 </td>
               </tr>
             </tfoot>

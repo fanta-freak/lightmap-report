@@ -12,6 +12,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useReportData } from '../hooks/useReportData';
 import { grosseZahl } from '../utils/format';
+import { gesamtleistung } from '../utils/dataFallbacks';
 
 function StatCard({ label, value, source }: { label: string; value: string; source?: DataSource }) {
   return (
@@ -32,6 +33,18 @@ export function ReportDetailPage() {
   if (error || !report) return <ErrorMessage message={error} />;
 
   const data = report.payload;
+
+  // Version und Datum gehoeren zur gedruckten BERECHNUNG, nicht zum Projekt.
+  // Bis 10.08.2026 stand hier fest "V1" und das Anlagedatum des Projekts —
+  // drei Laeufe desselben Projekts ergaben drei identisch beschriftete
+  // Berichte. Aeltere Berichte tragen den calculation-Block nicht; fuer die
+  // bleibt es beim alten Verhalten, damit sie sich nicht ruecklings aendern.
+  // Gesamtleistung: Projekt-Aggregat, sonst Summe der Masten (s. Helfer).
+  const anlagenLeistung = gesamtleistung(data.project.project_wattage, data.lightpoints);
+
+  const version = data.calculation?.version ?? 'V1';
+  const berechnungsDatum =
+    data.calculation?.created_at ?? data.project.project_creation_date;
 
   const handlePdfExport = () => {
     window.print();
@@ -93,7 +106,7 @@ export function ReportDetailPage() {
           {/* Project meta row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border rounded overflow-hidden">
             <StatCard label="Feldfläche" value={`${grosseZahl(data.project.field_area)} m²`} source="dump" />
-            <StatCard label="Leistung" value={`${grosseZahl(data.project.project_wattage)} W`} source="dump" />
+            <StatCard label="Leistung" value={`${grosseZahl(anlagenLeistung)} W`} source="dump" />
             <StatCard label="Masten" value={String(data.lightpoints.length)} source="dump" />
             <StatCard label="Leuchten" value={String(data.luminaireList.length)} source="dump" />
           </div>
@@ -101,9 +114,29 @@ export function ReportDetailPage() {
           {/* Project details */}
           <div className="mt-6 flex flex-wrap gap-x-10 gap-y-1 text-sm text-signify-gray">
             <span>Projektnummer: <strong className="text-signify-dark">{data.project.project_number}</strong></span>
-            <span>Version: <strong className="text-signify-dark">V1</strong></span>
-            <span>Datum: <strong className="text-signify-dark">{data.project.project_creation_date}</strong></span>
+            <span>Version: <strong className="text-signify-dark">{version}</strong></span>
+            <span>Datum: <strong className="text-signify-dark">{berechnungsDatum}</strong></span>
           </div>
+
+          {/* ── Warnung: Kennzahlen und Geometrie aus verschiedenen Laeufen ──
+              Siehe CalculationInfo.geometry_matches. Der Bericht wird trotzdem
+              gedruckt — die alten Mastdaten existieren nicht mehr, ein leerer
+              Bericht waere also die einzige Alternative. Aber er sagt es. */}
+          {data.calculation && data.calculation.geometry_matches === false && (
+            <div className="mt-6 rounded-lg border border-fail-red/40 bg-fail-red/5 px-6 py-4">
+              <p className="text-sm font-bold text-fail-red mb-1">
+                Kennzahlen und Mastdaten stammen aus verschiedenen Berechnungen
+              </p>
+              <p className="text-sm text-signify-gray">
+                Die Ergebniswerte gehören zu Berechnung {data.calculation.id}
+                {data.calculation.created_at ? ` vom ${data.calculation.created_at}` : ''};
+                Mastliste, Karte und Rasterbild zeigen dagegen den zuletzt
+                gerechneten Stand (Berechnung {data.calculation.geometry_calculation_id}).
+                Für einen in sich stimmigen Bericht die gewünschte Variante neu
+                berechnen und den Bericht danach erneut erzeugen.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ─── Report sections ─── */}
@@ -125,6 +158,7 @@ export function ReportDetailPage() {
                 data={data}
                 fieldNumber={1}
                 metrics={data.fieldMetrics}
+                spec={data.fieldSpec}
               />
             </AbschnittSicherung>
           </div>
@@ -162,10 +196,10 @@ export function ReportDetailPage() {
         <div className="max-w-[900px] mx-auto px-8 py-5 flex items-center justify-between">
           <div className="text-xs text-signify-gray">
             <p>&copy; Signify GmbH</p>
-            <p>{data.project.project_creation_date}</p>
+            <p>{berechnungsDatum}</p>
           </div>
           <p className="text-xs text-signify-gray text-center">
-            Projekt {data.project.project_number}, Version 1, {data.project.project_name}
+            Projekt {data.project.project_number}, Version {version.replace(/^V/, '')}, {data.project.project_name}
           </p>
           <SignifyLogo className="h-6" />
         </div>

@@ -99,8 +99,36 @@ export function synthesizeLuminaireList(
       rotation: 0, // Not available in lightpoints data
       tilt: lp.tilt,
       colorDot,
+      // 10.08.2026: Leistung je Mast. Vorher lag dem Bericht ueberhaupt keine
+      // Leistung vor — die Gesamtleistung kam als fertige Zahl aus dem
+      // Projekt und war, wenn die dortige Spalte leer war, einfach weg.
+      wattage: lp.wattage ?? null,
     };
   });
+}
+
+/**
+ * Gesamtleistung der Anlage in W.
+ *
+ * Erste Wahl ist die Zahl aus dem Projekt. Die war zwischen dem 06.08. und dem
+ * 10.08.2026 fuer JEDEN Lauf leer — die Rechenkette hatte aufgehoert, das
+ * Aggregat zu schreiben, und der Bericht druckte "Leistung — W". Zweite Wahl
+ * ist deshalb die Summe ueber die Masten; das ist exakt dieselbe Rechnung, die
+ * die Rechenkette beim Speichern macht. Kennt der Bericht auch die nicht
+ * (aeltere Payloads tragen keine Leistung je Mast), bleibt es beim
+ * Gedankenstrich statt bei einer erfundenen Null.
+ */
+export function gesamtleistung(
+  projektLeistung: unknown,
+  lightpoints: LightPoint[],
+): number | null {
+  if (typeof projektLeistung === 'number' && Number.isFinite(projektLeistung) && projektLeistung > 0) {
+    return projektLeistung;
+  }
+  const werte = lightpoints
+    .map((lp) => lp.wattage)
+    .filter((w): w is number => typeof w === 'number' && Number.isFinite(w));
+  return werte.length > 0 ? werte.reduce((a, b) => a + b, 0) : null;
 }
 
 /* ─── German number formatting ─── */

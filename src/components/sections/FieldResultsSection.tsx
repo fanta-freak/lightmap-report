@@ -1,4 +1,4 @@
-import type { ReportData, ResultMetric } from '../../types';
+import type { ReportData, ResultMetric, FieldSpecification } from '../../types';
 import { ResultsTable } from '../shared/ResultsTable';
 import { IlluminanceGrid } from '../heatmap/IlluminanceGrid';
 
@@ -6,9 +6,15 @@ interface FieldResultsSectionProps {
   data: ReportData;
   fieldNumber: number;
   metrics: ResultMetric[];
+  spec?: FieldSpecification;
 }
 
-export function FieldResultsSection({ data, fieldNumber, metrics }: FieldResultsSectionProps) {
+export function FieldResultsSection({ data, fieldNumber, metrics, spec }: FieldResultsSectionProps) {
+  // 10.08.2026: Der Titel stand fest auf "Fußball Klasse III" — auch fuer ein
+  // Tennisprojekt. Sportart kommt jetzt aus der Projektart (Backend), die
+  // Klasse weiterhin aus der Vorgabe im fieldSpec.
+  const titel = [spec?.sportType, spec?.lightingClass].filter(Boolean).join(' ')
+    || 'Fußball Klasse III';
   return (
     <section className="space-y-8">
       {/* Section header */}
@@ -26,7 +32,7 @@ export function FieldResultsSection({ data, fieldNumber, metrics }: FieldResults
 
       {/* Results table with pass/fail */}
       <ResultsTable
-        title="Fußball Klasse III"
+        title={titel}
         subtitle="Lichttechnische Ergebnisse nach EN 12193"
         metrics={metrics}
       />

@@ -80,6 +80,9 @@ export interface LightPoint {
   direction_id: number | null;
   tilt: number;
   ldt_file_name: string | null;
+  /** Leistung dieses Mastes in W. Erst ab 10.08.2026 im Payload — aeltere
+   *  Berichte haben das Feld nicht, deshalb optional. */
+  wattage?: number | null;
 }
 
 export interface Direction {
@@ -133,6 +136,33 @@ export interface FieldSpecification {
   colorTemperature: string;
   maintenanceFactor: number;
   mountingHeight: number;
+  /** Alle im Projekt vorkommenden Masthoehen. `mountingHeight` ist nur die
+   *  erste davon — bei gemischten Hoehen stand dort bisher eine willkuerliche
+   *  Zahl. Ab 10.08.2026 im Payload, deshalb optional. */
+  mountingHeights?: number[];
+}
+
+/* ─── Identitaet des gedruckten Laufs ─── */
+
+/**
+ * Welche Berechnung steht in diesem Bericht?
+ *
+ * Bis 10.08.2026 stand im Kopf fest "Version: V1" und als Datum das
+ * Anlagedatum des PROJEKTS — drei Laeufe ergaben drei identische Koepfe.
+ *
+ * `geometry_matches` ist der wichtigere Teil: Kennzahlen kommen aus dem
+ * gewaehlten Lauf, Mastliste/Karte/Heatmap dagegen immer aus dem juengsten
+ * (die Rechenkette ueberschreibt dieselben Mast-Zeilen bei jedem Lauf). Ist
+ * das Flag false, gehoeren die beiden Haelften des Berichts nicht zusammen.
+ */
+export interface CalculationInfo {
+  id: number | null;
+  label: string | null;
+  version: string | null;
+  created_at: string | null;
+  best_fitness: number | null;
+  geometry_calculation_id: number | null;
+  geometry_matches: boolean;
 }
 
 /* ─── LAI Requirements (Residents / Light immission) ─── */
@@ -175,6 +205,8 @@ export interface LuminaireListEntry {
   rotation: number;
   tilt: number;
   colorDot: string;
+  /** Leistung dieses Mastes in W (aus lightpoints.wattage). */
+  wattage?: number | null;
 }
 
 export interface ReportData {
@@ -200,6 +232,8 @@ export interface BuildingFacade {
 
 export interface ReportPayload extends ReportData {
   geoCenter: import('../utils/coordinates').GeoCenter;
+  /** Fehlt in Berichten von vor dem 10.08.2026. */
+  calculation?: CalculationInfo;
   fieldSpec: FieldSpecification;
   laiRequirements: LAIRequirements;
   glossaryTerms: GlossaryTerm[];

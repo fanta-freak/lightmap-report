@@ -17,6 +17,16 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
   const halfL = project.field_length / 2;
   const swapped = detectAxisSwap(calculationPoints, project.field_length, project.field_width);
 
+  // Alle vorkommenden Masthoehen. Neue Berichte liefern sie mit; fuer aeltere
+  // leiten wir sie aus den Masten selbst ab, statt auf den ersten zu zeigen.
+  const hoehen =
+    spec.mountingHeights && spec.mountingHeights.length > 0
+      ? spec.mountingHeights
+      : [...new Set(lightpoints.map((m) => m.mastheight).filter((h) => h != null))].sort(
+          (a, b) => a - b,
+        );
+  const masthoehe = hoehen.length > 0 ? `${hoehen.join(' / ')} m` : `${spec.mountingHeight} m`;
+
   return (
     <section className="space-y-8">
       {/* Section header */}
@@ -46,7 +56,10 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
             <SpecRow label="Beleuchtungsklasse" value={spec.lightingClass} source="pdf" />
             <SpecRow label="Farbtemperatur" value={spec.colorTemperature} source="pdf" />
             <SpecRow label="Wartungsfaktor" value={zahl(spec.maintenanceFactor, 2)} source="pdf" />
-            <SpecRow label="Masthöhe" value={`${spec.mountingHeight} m`} source="dump" />
+            {/* 10.08.2026: Hier stand nur die Hoehe des ERSTEN Mastes — bei
+                gemischten Hoehen eine willkuerliche Zahl, waehrend die Tabelle
+                weiter unten die tatsaechlichen Werte zeigte. */}
+            <SpecRow label={hoehen.length > 1 ? 'Masthöhen' : 'Masthöhe'} value={masthoehe} source="dump" />
           </div>
         </div>
 
