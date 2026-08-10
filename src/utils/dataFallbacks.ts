@@ -110,25 +110,38 @@ export function synthesizeLuminaireList(
 /**
  * Gesamtleistung der Anlage in W.
  *
- * Erste Wahl ist die Zahl aus dem Projekt. Die war zwischen dem 06.08. und dem
- * 10.08.2026 fuer JEDEN Lauf leer — die Rechenkette hatte aufgehoert, das
- * Aggregat zu schreiben, und der Bericht druckte "Leistung — W". Zweite Wahl
- * ist deshalb die Summe ueber die Masten; das ist exakt dieselbe Rechnung, die
- * die Rechenkette beim Speichern macht. Kennt der Bericht auch die nicht
- * (aeltere Payloads tragen keine Leistung je Mast), bleibt es beim
+ * Fuehrend ist die Summe ueber die Masten, die dieser Bericht auch auflistet —
+ * damit stimmt der Kopf per Konstruktion mit der Leuchtenliste ueberein.
+ *
+ * Umgestellt am 10.08.2026: vorher gewann die Zahl aus dem Projekt. Die war
+ * zwischen dem 06.08. und dem 10.08. fuer jeden Lauf leer (die Rechenkette
+ * hatte aufgehoert, das Aggregat zu schreiben, der Bericht druckte
+ * "Leistung — W") — und in aelteren Berichten steht sie VERALTET drin, weil
+ * spaetere Laeufe die Masten neu geschrieben haben, das Aggregat aber nicht.
+ * Bericht 875 (Sportplatz Springe) druckte so "Gesamtleistung: 6.036 W" ueber
+ * einer Spalte mit 6 × 1.505,9 W = 9.035,4 W.
+ *
+ * Weil gespeicherte Payloads eingefroren sind, aber hier im Browser gerendert
+ * werden, korrigiert diese Reihenfolge auch bereits erzeugte Berichte.
+ *
+ * Das Projekt-Aggregat bleibt Rueckfall fuer aeltere Payloads, die ueberhaupt
+ * keine Leistung je Mast tragen. Ist auch das nichts, bleibt es beim
  * Gedankenstrich statt bei einer erfundenen Null.
  */
 export function gesamtleistung(
   projektLeistung: unknown,
   lightpoints: LightPoint[],
 ): number | null {
-  if (typeof projektLeistung === 'number' && Number.isFinite(projektLeistung) && projektLeistung > 0) {
-    return projektLeistung;
-  }
   const werte = lightpoints
     .map((lp) => lp.wattage)
     .filter((w): w is number => typeof w === 'number' && Number.isFinite(w));
-  return werte.length > 0 ? werte.reduce((a, b) => a + b, 0) : null;
+  if (werte.length > 0) {
+    return werte.reduce((a, b) => a + b, 0);
+  }
+  if (typeof projektLeistung === 'number' && Number.isFinite(projektLeistung) && projektLeistung > 0) {
+    return projektLeistung;
+  }
+  return null;
 }
 
 /* ─── German number formatting ─── */
