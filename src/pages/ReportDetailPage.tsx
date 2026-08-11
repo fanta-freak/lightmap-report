@@ -118,22 +118,28 @@ export function ReportDetailPage() {
             <span>Datum: <strong className="text-signify-dark">{berechnungsDatum}</strong></span>
           </div>
 
-          {/* ── Warnung: Kennzahlen und Geometrie aus verschiedenen Laeufen ──
-              Siehe CalculationInfo.geometry_matches. Der Bericht wird trotzdem
-              gedruckt — die alten Mastdaten existieren nicht mehr, ein leerer
-              Bericht waere also die einzige Alternative. Aber er sagt es. */}
+          {/* ── Hinweis: Zeichnungen aus einer neueren Berechnung ────────────
+              Seit dem 11.08.2026 legt die Rechenkette zu jeder Berechnung
+              einen Geometrie-Abzug an; neu gerechnete Varianten sind damit
+              immer aus einem Guss und zeigen diesen Hinweis nie.
+
+              Er bleibt fuer Berichte ueber Berechnungen VON VORHER: fuer die
+              gibt es keinen Abzug, ihre Masten wurden vom naechsten Lauf
+              ueberschrieben. Bewusst ohne Berechnungsnummern — die sagen dem
+              Leser nichts; was er wissen muss, ist, welcher Teil des Berichts
+              nicht zu den Zahlen gehoert und was dagegen hilft. */}
           {data.calculation && data.calculation.geometry_matches === false && (
-            <div className="mt-6 rounded-lg border border-fail-red/40 bg-fail-red/5 px-6 py-4">
-              <p className="text-sm font-bold text-fail-red mb-1">
-                Kennzahlen und Mastdaten stammen aus verschiedenen Berechnungen
+            <div className="mt-6 rounded-lg border border-warn-amber/40 bg-warn-amber/5 px-6 py-4">
+              <p className="text-sm font-bold text-signify-dark mb-1">
+                Zeichnungen zeigen einen neueren Stand als die Ergebniswerte
               </p>
               <p className="text-sm text-signify-gray">
-                Die Ergebniswerte gehören zu Berechnung {data.calculation.id}
-                {data.calculation.created_at ? ` vom ${data.calculation.created_at}` : ''};
-                Mastliste, Karte und Rasterbild zeigen dagegen den zuletzt
-                gerechneten Stand (Berechnung {data.calculation.geometry_calculation_id}).
-                Für einen in sich stimmigen Bericht die gewünschte Variante neu
-                berechnen und den Bericht danach erneut erzeugen.
+                Die Kennzahlen in diesem Bericht gehören zur ausgewiesenen
+                Berechnung{data.calculation.created_at ? ` vom ${data.calculation.created_at}` : ''}.
+                Mastliste, Karte und Rasterbild stammen dagegen aus einer
+                späteren Berechnung desselben Projekts — für die ältere sind
+                diese Angaben nicht mehr gespeichert. Eine erneute Berechnung
+                dieser Variante liefert einen Bericht aus einem Guss.
               </p>
             </div>
           )}

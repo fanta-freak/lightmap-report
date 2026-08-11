@@ -150,10 +150,19 @@ export interface FieldSpecification {
  * Bis 10.08.2026 stand im Kopf fest "Version: V1" und als Datum das
  * Anlagedatum des PROJEKTS — drei Laeufe ergaben drei identische Koepfe.
  *
- * `geometry_matches` ist der wichtigere Teil: Kennzahlen kommen aus dem
- * gewaehlten Lauf, Mastliste/Karte/Heatmap dagegen immer aus dem juengsten
- * (die Rechenkette ueberschreibt dieselben Mast-Zeilen bei jedem Lauf). Ist
- * das Flag false, gehoeren die beiden Haelften des Berichts nicht zusammen.
+ * `geometry_matches`: Kennzahlen kommen aus dem gewaehlten Lauf, Mastliste,
+ * Karte und Heatmap dagegen aus der gespeicherten Geometrie. Bis zum
+ * 11.08.2026 gab es die nur EINMAL je Projekt — die Rechenkette ueberschrieb
+ * dieselben Mast-Zeilen bei jedem Lauf, ein Bericht ueber einen aelteren Lauf
+ * zeigte also fremde Masten. Seither legt die Kette je Berechnung einen Abzug
+ * an (`geometry_source: 'snapshot'`), und das Flag steht bei neu gerechneten
+ * Varianten immer auf true.
+ *
+ * false heisst jetzt nur noch: dieser Lauf stammt aus der Zeit davor, seine
+ * Geometrie ist nicht mehr vorhanden, gezeichnet wird ein spaeterer Stand.
+ * `geometry_source` sagt, aus welcher Quelle der Bericht gezeichnet hat —
+ * 'snapshot' = Abzug dieses Laufs, 'live' = aktueller Stand des Projekts.
+ * Aeltere Berichte kennen das Feld nicht, deshalb optional.
  */
 export interface CalculationInfo {
   id: number | null;
@@ -163,6 +172,7 @@ export interface CalculationInfo {
   best_fitness: number | null;
   geometry_calculation_id: number | null;
   geometry_matches: boolean;
+  geometry_source?: 'snapshot' | 'live';
 }
 
 /* ─── LAI Requirements (Residents / Light immission) ─── */
