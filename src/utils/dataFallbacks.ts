@@ -220,46 +220,61 @@ export function computeFieldMetrics(
   const emWert = paEhave ?? taEhave;
   const uWert = paU ?? taU;
 
+  // ── Nachweis auf den Anzeigewerten, mit ≥/≤ statt >/< ──────────────────
+  // 2026-08-11: EN 12193 nennt MINDEST- bzw. Hoechstwerte — ein exakt
+  // getroffener Grenzwert (Uo = 0,50, GR = 55,0) erfuellt die Norm. Vorher
+  // wurde strikt verglichen (`uWert > 0.5`) und auf dem Rohwert geprueft:
+  // ein Rohwert von z.B. 0,496 stand als "0,50" in der Tabelle, bekam aber
+  // ein rotes Kreuz neben der Vorgabe "> 0,50" — fuer den Leser ein
+  // Widerspruch. Deshalb wird jetzt erst auf die angezeigte Genauigkeit
+  // gerundet und DANN verglichen; Anzeige und Status koennen sich damit
+  // nie mehr widersprechen (so fuehren auch Relux/DIALux den Nachweis).
+  const emAnzeige = emWert != null ? Math.round(emWert) : null;
+  const uAnzeige = uWert != null ? Number(uWert.toFixed(2)) : null;
+  const rgAnzeige = rg != null ? Number(rg.toFixed(1)) : null;
+  const taPaIllumAnzeige = taPaIllum != null ? Math.round(taPaIllum) : null;
+  const taPaUnifAnzeige = taPaUnif != null ? Math.round(taPaUnif) : null;
+
   const metrics: ResultMetric[] = [
     {
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
-      requirement: '> 75 lux',
-      result: emWert != null ? `${Math.round(emWert)} lux` : '—',
-      passed: emWert != null ? emWert > 75 : true,
+      requirement: '≥ 75 lux',
+      result: emAnzeige != null ? `${emAnzeige} lux` : '—',
+      passed: emAnzeige != null ? emAnzeige >= 75 : true,
       unit: 'lux',
       source: r ? 'dump' : 'dump',
     },
     {
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
-      requirement: '> 0,50',
-      result: uWert != null ? fmtDe(uWert) : '—',
-      passed: uWert != null ? uWert > 0.5 : true,
+      requirement: '≥ 0,50',
+      result: uAnzeige != null ? fmtDe(uAnzeige) : '—',
+      passed: uAnzeige != null ? uAnzeige >= 0.5 : true,
       source: r ? 'dump' : 'dump',
     },
     {
       label: 'Blendindex R',
       subscript: 'G',
-      requirement: '< 55',
-      result: rg != null ? fmtDe(rg, 1) : '—',
-      passed: rg != null ? rg < 55 : true,
+      requirement: '≤ 55',
+      result: rgAnzeige != null ? fmtDe(rgAnzeige, 1) : '—',
+      passed: rgAnzeige != null ? rgAnzeige <= 55 : true,
       source: rg != null ? 'dump' : 'invented',
     },
     {
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
-      requirement: '> 75 %',
-      result: taPaIllum != null ? `${Math.round(taPaIllum)} %` : '—',
-      passed: taPaIllum != null ? taPaIllum > 75 : true,
+      requirement: '≥ 75 %',
+      result: taPaIllumAnzeige != null ? `${taPaIllumAnzeige} %` : '—',
+      passed: taPaIllumAnzeige != null ? taPaIllumAnzeige >= 75 : true,
       source: taPaIllum != null ? 'dump' : 'invented',
     },
     {
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
-      requirement: '> 75 %',
-      result: taPaUnif != null ? `${Math.round(taPaUnif)} %` : '—',
-      passed: taPaUnif != null ? taPaUnif > 75 : true,
+      requirement: '≥ 75 %',
+      result: taPaUnifAnzeige != null ? `${taPaUnifAnzeige} %` : '—',
+      passed: taPaUnifAnzeige != null ? taPaUnifAnzeige >= 75 : true,
       source: taPaUnif != null ? 'dump' : 'invented',
     },
     {
