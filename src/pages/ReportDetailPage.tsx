@@ -118,31 +118,24 @@ export function ReportDetailPage() {
             <span>Datum: <strong className="text-signify-dark">{berechnungsDatum}</strong></span>
           </div>
 
-          {/* ── Hinweis: Zeichnungen aus einer neueren Berechnung ────────────
-              Seit dem 11.08.2026 legt die Rechenkette zu jeder Berechnung
-              einen Geometrie-Abzug an; neu gerechnete Varianten sind damit
-              immer aus einem Guss und zeigen diesen Hinweis nie.
+          {/* ── Kein Hinweiskasten zur Geometrie mehr (11.08.2026) ───────────
+              Hier stand bis heute eine Warnung, wenn Kennzahlen und
+              Zeichnungen aus verschiedenen Berechnungen stammten. Sie ist
+              raus, aus zwei Gruenden:
 
-              Er bleibt fuer Berichte ueber Berechnungen VON VORHER: fuer die
-              gibt es keinen Abzug, ihre Masten wurden vom naechsten Lauf
-              ueberschrieben. Bewusst ohne Berechnungsnummern — die sagen dem
-              Leser nichts; was er wissen muss, ist, welcher Teil des Berichts
-              nicht zu den Zahlen gehoert und was dagegen hilft. */}
-          {data.calculation && data.calculation.geometry_matches === false && (
-            <div className="mt-6 rounded-lg border border-warn-amber/40 bg-warn-amber/5 px-6 py-4">
-              <p className="text-sm font-bold text-signify-dark mb-1">
-                Zeichnungen zeigen einen neueren Stand als die Ergebniswerte
-              </p>
-              <p className="text-sm text-signify-gray">
-                Die Kennzahlen in diesem Bericht gehören zur ausgewiesenen
-                Berechnung{data.calculation.created_at ? ` vom ${data.calculation.created_at}` : ''}.
-                Mastliste, Karte und Rasterbild stammen dagegen aus einer
-                späteren Berechnung desselben Projekts — für die ältere sind
-                diese Angaben nicht mehr gespeichert. Eine erneute Berechnung
-                dieser Variante liefert einen Bericht aus einem Guss.
-              </p>
-            </div>
-          )}
+              1. Der Fall selbst ist behoben. Seit Migration 0014 haelt jede
+                 Berechnung ihre eigene Geometrie fest (Backend
+                 calculation_geometry.py); neu gerechnete Laeufe koennen gar
+                 nicht mehr auseinanderlaufen.
+              2. Uebrig blieb er nur fuer Laeufe von VOR dem 11.08. Fuer die
+                 hilft er dem Leser des Berichts nicht — er kann nichts daran
+                 aendern, und ein roter Kasten im Beleuchtungsvorschlag liest
+                 sich wie ein Mangel der Anlage.
+
+              Die Information bleibt im Payload: `calculation.geometry_matches`
+              und `geometry_source` kommen weiter mit und lassen sich jederzeit
+              wieder anzeigen oder auswerten — sie werden nur nicht mehr
+              gedruckt. Entscheidung Philip, 11.08.2026. */}
         </div>
 
         {/* ─── Report sections ─── */}
