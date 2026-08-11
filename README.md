@@ -71,3 +71,35 @@ export default defineConfig([
   },
 ])
 ```
+
+---
+
+## Deploy (Stand 11.08.2026)
+
+Der Bericht liegt als statisches Bundle auf dem ils-sport-Server und wird von
+nginx unter `https://sport-alpha.philiplentz.de/report/` ausgeliefert. Die
+Report-API laeuft daneben im eigenen Stack (`/report/api/` → 127.0.0.1:8003).
+
+```bash
+npm run build
+rsync -a --delete dist/ root@178.104.86.80:/var/www/lightmap/
+```
+
+Mehr braucht es nicht — `base` und `VITE_API_URL` stehen seit dem 11.08. richtig
+in `vite.config.ts` und `.env.production`. Davor waren beide noch auf den alten
+GitHub-Pages-Stand gesetzt (`/lightmap-report/`, `https://api.philiplentz.de`)
+und der ausgerollte Stand musste von Hand mit Zusatzflags gebaut werden. Wer das
+vergass, bekam eine weisse Seite (falscher Bundle-Pfad) oder "Fehler beim Laden"
+(falsche API-Adresse).
+
+**Zielverzeichnis ist `/var/www/lightmap/`**, nicht `/root/lightmap/web/` — das
+ist eine alte Kopie und wird von nginx nicht gelesen.
+
+Vor dem Ausrollen eine Sicherung anlegen; ein Rollback ist ein `rsync` zurueck:
+
+```bash
+ssh root@178.104.86.80 "cp -a /var/www/lightmap /root/rollback/varwww_lightmap_$(date +%Y%m%d_%H%M%S)"
+```
+
+Die Instanz ist **eine fuer alles**: Berichte aus Produktiv und aus der Sandbox
+werden von demselben Bundle gerendert.
