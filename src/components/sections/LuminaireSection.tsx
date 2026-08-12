@@ -1,7 +1,7 @@
 import type { ReportData } from '../../types';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 import { grosseZahl, ersteZahl, zahl, KEIN_WERT } from '../../utils/format';
-import { gesamtleistung } from '../../utils/dataFallbacks';
+import { gesamtleistung, DOT_COLORS } from '../../utils/dataFallbacks';
 
 interface LuminaireSectionProps {
   data: ReportData;
@@ -9,6 +9,10 @@ interface LuminaireSectionProps {
 
 export function LuminaireSection({ data }: LuminaireSectionProps) {
   const { luminaireList, luminaires, project } = data;
+  // Eindeutige Mastpositionen (mehrere Leuchten können auf einem Mast sitzen) — S30
+  const mastCount = new Set(
+    data.lightpoints.map((lp) => `${lp.x.toFixed(1)}|${lp.y.toFixed(1)}`)
+  ).size;
 
   // Projekt-Aggregat, sonst Summe der Masten — siehe gesamtleistung().
   const anlagenLeistung = gesamtleistung(project.project_wattage, data.lightpoints);
@@ -31,7 +35,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
         <div className="px-8 py-5 border-b border-gray-100 bg-bg-light">
           <h3 className="text-lg font-bold text-signify-dark">Leuchtenpositionen</h3>
           <p className="text-xs text-signify-gray mt-0.5">
-            {luminaireList.length} Leuchten auf {data.lightpoints.length} Masten
+            {luminaireList.length} Leuchten auf {mastCount} Masten
           </p>
           {/* 10.08.2026: Die Liste fuehrt genau eine Leuchte je Mast — mehr
               als eine Leuchte pro Mast kann die Rechenkette bisher nicht
@@ -115,15 +119,23 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
         </div>
       </div>
 
-      {/* Luminaire datasheets */}
+      {/* Luminaire datasheets — grid fließt bei >2 Leuchtentypen automatisch
+          in weitere Zeilen (2 Karten pro Reihe). */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {luminaires.map((lum) => (
+        {luminaires.map((lum, i) => (
           <div
             key={lum.id}
             className="bg-card-white rounded-lg border border-border overflow-hidden"
           >
             <div className="px-6 py-4 border-b border-gray-100 bg-bg-light">
-              <h4 className="text-base font-bold text-signify-dark">{lum.name}</h4>
+              <div className="flex items-center gap-2">
+                {/* Farbkodierung wie auf der Karte / in der Leuchtenliste */}
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: DOT_COLORS[i % DOT_COLORS.length] }}
+                />
+                <h4 className="text-base font-bold text-signify-dark">{lum.name}</h4>
+              </div>
               <p className="text-xs text-signify-gray mt-0.5">Leuchtendatenblatt</p>
             </div>
             <div className="px-6 py-5">

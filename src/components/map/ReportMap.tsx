@@ -19,6 +19,9 @@ export interface ReportMapProps {
   halfLength: number;
   /** Mast positions (local coords) */
   masts?: LightPoint[];
+  /** Farbe pro Mast (reihenfolgegleich mit `masts`) — Farbkodierung nach Leuchtentyp.
+      Ohne Angabe fällt jeder Mast auf die Standard-Cyan-Farbe zurück. */
+  mastColors?: string[];
   /** Aiming directions (local coords — vector field is the aiming point) */
   directions?: Direction[];
   /** Building outlines (will show as blue rectangles; needs position data) */
@@ -70,6 +73,7 @@ export function ReportMap({
   halfWidth,
   halfLength,
   masts = [],
+  mastColors = [],
   directions = [],
   buildingFacades = [],
   swapped = false,
@@ -98,7 +102,7 @@ export function ReportMap({
       const lngLat = toGeo(m.x, m.y);
       return {
         type: 'Feature' as const,
-        properties: { label: `Mast ${i + 1}` },
+        properties: { label: `Mast ${i + 1}`, color: mastColors[i] ?? '#67E8F9' },
         geometry: { type: 'Point' as const, coordinates: lngLat },
       };
     });
@@ -126,7 +130,8 @@ export function ReportMap({
 
       arrowFeatures.push({
         type: 'Feature' as const,
-        properties: {},
+        // Pfeil in der Farbe des Leuchtentyps (Kundenwunsch 2026-05, S33)
+        properties: { color: mastColors[i] ?? '#F97316' },
         geometry: {
           type: 'LineString' as const,
           coordinates: [fromLngLat, toLngLat],
@@ -188,7 +193,7 @@ export function ReportMap({
       buildingLabelFeatures,
       bounds,
     };
-  }, [geoCenter, halfWidth, halfLength, masts, directions, buildingFacades, swapped]);
+  }, [geoCenter, halfWidth, halfLength, masts, mastColors, directions, buildingFacades, swapped]);
 
   // ── Initialize map ──
   useEffect(() => {
@@ -253,7 +258,8 @@ export function ReportMap({
           type: 'line',
           source: 'arrows',
           paint: {
-            'line-color': '#F97316',
+            // Farbe pro Leuchtentyp (Fallback Orange), analog zu den Mast-Markern
+            'line-color': ['coalesce', ['get', 'color'], '#F97316'],
             'line-width': 2,
             'line-opacity': 0.85,
           },
@@ -327,7 +333,9 @@ export function ReportMap({
           source: 'masts',
           paint: {
             'circle-radius': 7,
-            'circle-color': '#67E8F9',
+            // Farbkodierung nach Leuchtentyp (aus dem Feature-Property `color`);
+            // Fallback auf Cyan, wenn keine mastColors übergeben wurden.
+            'circle-color': ['coalesce', ['get', 'color'], '#67E8F9'],
             'circle-stroke-color': '#0E7490',
             'circle-stroke-width': 2,
           },

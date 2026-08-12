@@ -1,4 +1,4 @@
-import type { ReportData, FieldSpecification } from '../../types';
+import type { ReportData, FieldSpecification, ResultMetric } from '../../types';
 import { ReportMap } from '../map/ReportMap';
 import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
@@ -9,13 +9,26 @@ interface FieldDetailSectionProps {
   fieldNumber: number;
   spec: FieldSpecification;
   geoCenter: GeoCenter;
+  metrics: ResultMetric[];
 }
 
-export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: FieldDetailSectionProps) {
-  const { project, lightpoints, directions, calculationPoints } = data;
+export function FieldDetailSection({ data, fieldNumber, spec, geoCenter, metrics }: FieldDetailSectionProps) {
+  const { project, lightpoints, directions, calculationPoints, luminaireList } = data;
   const halfW = project.field_width / 2;
   const halfL = project.field_length / 2;
   const swapped = detectAxisSwap(calculationPoints, project.field_length, project.field_width);
+  // Kundenwunsch 2026-03: bei mehr als 6 Masten die Zeilen enger setzen,
+  // damit die Tabelle auf eine Druckseite passt.
+  const compact = lightpoints.length > 6;
+  const rowPad = compact ? 'py-1.5' : 'py-3';
+  // Farbkodierung wie auf der Karte: pro Mast dieselbe Farbe wie in der
+  // Leuchtenliste (luminaireList ist reihenfolgegleich mit lightpoints).
+  const mastColors = luminaireList.map((e) => e.colorDot);
+  // Vorgabewerte (Ēm, Uo) aus den Kenngrößen ziehen und den Vergleichsoperator
+  // (≥/>) entfernen — Kundenwunsch 2026-05 (S28): Vorgabe im Report ausgeben.
+  const stripCmp = (s?: string) => (s ?? '').replace(/^[≥>≤<]\s*/, '').trim();
+  const emTarget = stripCmp(metrics.find((m) => m.label.startsWith('Mittlerer Wartungswert'))?.requirement);
+  const uoTarget = stripCmp(metrics.find((m) => m.label.startsWith('Gleichmäßigkeit'))?.requirement);
 
   // Alle vorkommenden Masthoehen. Neue Berichte liefern sie mit; fuer aeltere
   // leiten wir sie aus den Masten selbst ab, statt auf den ersten zu zeigen.
@@ -60,6 +73,9 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                 gemischten Hoehen eine willkuerliche Zahl, waehrend die Tabelle
                 weiter unten die tatsaechlichen Werte zeigte. */}
             <SpecRow label={hoehen.length > 1 ? 'Masthöhen' : 'Masthöhe'} value={masthoehe} source="dump" />
+            {/* Vorgabewerte laut Norm/Eingabe (S28, Juli-PR #2) */}
+            {emTarget && <SpecRow label="Vorgabe Ēm" value={emTarget} source="pdf" />}
+            {uoTarget && <SpecRow label="Vorgabe Uo (Emin/Ēm)" value={uoTarget} source="pdf" />}
           </div>
         </div>
 
@@ -93,6 +109,7 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
         halfWidth={halfW}
         halfLength={halfL}
         masts={lightpoints}
+        mastColors={mastColors}
         directions={directions}
         swapped={swapped}
         showMastLabels={true}
@@ -116,16 +133,13 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                   Mast
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  X (Breite)
+                  X
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  Y (Länge)
+                  Y
                 </th>
                 <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
                   Höhe
-                </th>
-                <th className="text-right py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider">
-                  Neigung
                 </th>
                 <th className="text-left py-3 text-sm font-semibold text-signify-gray uppercase tracking-wider pl-4">
                   Leuchtentyp
@@ -138,27 +152,33 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter }: Field
                   key={mast.id}
                   className="border-b border-gray-50 hover:bg-signify-teal/5 transition-colors"
                 >
-                  <td className="py-3">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-signify-dark text-white text-sm font-bold">
+                  <td className={rowPad}>
+                    <span className={`inline-flex items-center justify-center rounded-full bg-signify-dark text-white font-bold ${compact ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'}`}>
                       {i + 1}
                     </span>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  {/* rowPad: enge Zeilen ab 7 Masten (Juli-PR #1); zahl():
+                      null-sicher fuer eingefrorene Alt-Payloads (August). */}
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{zahl(mast.x, 1)} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{zahl(mast.y, 1)} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
+                  <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
                     <SourceBadge source="dump">{mast.mastheight} m</SourceBadge>
                   </td>
-                  <td className="py-3 text-right font-mono text-sm text-signify-dark">
-                    <SourceBadge source="dump">{mast.tilt}°</SourceBadge>
-                  </td>
-                  <td className="py-3 text-left pl-4">
-                    <span className="text-sm text-signify-dark truncate block max-w-[260px]" title={mast.ldt_file_name ?? ''}>
-                      {mast.ldt_file_name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
-                    </span>
+                  <td className={`${rowPad} text-left pl-4`}>
+                    <div className="flex items-center gap-2">
+                      {/* Farbkodierung wie auf der Karte / in der Leuchtenliste */}
+                      <span
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: mastColors[i] ?? '#9CA3AF' }}
+                      />
+                      <span className="text-sm text-signify-dark truncate block max-w-[240px]" title={mast.ldt_file_name ?? ''}>
+                        {mast.ldt_file_name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))}

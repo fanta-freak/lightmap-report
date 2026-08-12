@@ -8,6 +8,7 @@ import { ResidentsSection } from '../components/sections/ResidentsSection';
 import { LuminaireSection } from '../components/sections/LuminaireSection';
 import { GlossarySection } from '../components/sections/GlossarySection';
 import { AbschnittSicherung } from '../components/shared/AbschnittSicherung';
+import { AppendixSection } from '../components/sections/AppendixSection';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useReportData } from '../hooks/useReportData';
@@ -45,6 +46,13 @@ export function ReportDetailPage() {
   const version = data.calculation?.version ?? 'V1';
   const berechnungsDatum =
     data.calculation?.created_at ?? data.project.project_creation_date;
+
+  // Mastanzahl = eindeutige Mastpositionen, nicht Leuchtenzahl (Kundenwunsch
+  // 2026-05, S30: bei mehreren Leuchten pro Mast zählte "Masten" bisher die
+  // Leuchten). Positionen auf 0,1 m gerundet zusammenfassen.
+  const mastCount = new Set(
+    data.lightpoints.map((lp) => `${lp.x.toFixed(1)}|${lp.y.toFixed(1)}`)
+  ).size;
 
   const handlePdfExport = () => {
     window.print();
@@ -105,9 +113,11 @@ export function ReportDetailPage() {
 
           {/* Project meta row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border rounded overflow-hidden">
+            {/* Leistung: Mastsumme fuehrend (Audit 10.08.); Masten: eindeutige
+                Positionen statt Leuchtenzahl (S30, Juli-PR #2). */}
             <StatCard label="Feldfläche" value={`${grosseZahl(data.project.field_area)} m²`} source="dump" />
             <StatCard label="Leistung" value={`${grosseZahl(anlagenLeistung)} W`} source="dump" />
-            <StatCard label="Masten" value={String(data.lightpoints.length)} source="dump" />
+            <StatCard label="Masten" value={String(mastCount)} source="dump" />
             <StatCard label="Leuchten" value={String(data.luminaireList.length)} source="dump" />
           </div>
 
@@ -147,6 +157,7 @@ export function ReportDetailPage() {
                 fieldNumber={1}
                 spec={data.fieldSpec}
                 geoCenter={data.geoCenter}
+                metrics={data.fieldMetrics}
               />
             </AbschnittSicherung>
           </div>
@@ -179,10 +190,15 @@ export function ReportDetailPage() {
             </AbschnittSicherung>
           </div>
 
-          <div id="glossary" className="py-10 scroll-mt-16 print-break-before">
+          <div id="glossary" className="py-10 border-b border-border scroll-mt-16 print-break-before">
             <AbschnittSicherung name="Glossar">
               <GlossarySection terms={data.glossaryTerms} />
             </AbschnittSicherung>
+          </div>
+
+          {/* Anhang: eingebettete Sportbeleuchtungs-Broschüre (Kundenwunsch 2026-03) */}
+          <div id="appendix" className="py-10 scroll-mt-16 print-break-before">
+            <AppendixSection />
           </div>
         </main>
       </div>

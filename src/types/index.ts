@@ -18,15 +18,8 @@ export interface Project {
 export interface FieldResult {
   id: number;
   project_id: number;
-  /** Total Area - average horizontal illuminance */
-  ta_ehave: number;
-  /** Total Area - minimum horizontal illuminance */
-  ta_ehmin: number;
-  /** Total Area - uniformity (Emin/Eave) */
-  ta_u: number;
-  /** Playing Area - average horizontal illuminance */
+  /** Playing Area (PA) — primary EN 12193 assessment area */
   pa_ehave: number;
-  /** Playing Area - minimum horizontal illuminance */
   pa_ehmin: number;
   /** Playing Area - maximum horizontal illuminance.
    *  2026-08-07 ergaenzt: Der Bericht nahm Emax bis dahin aus dem
@@ -36,6 +29,17 @@ export interface FieldResult {
   pa_ehmax: number;
   /** Playing Area - uniformity (Emin/Eave) */
   pa_u: number;
+  /** Total Area (TA) — includes 2.5m buffer around field */
+  ta_ehave: number;
+  ta_ehmin: number;
+  ta_ehmax: number;
+  ta_u: number;
+  /** TA/PA ratios — pre-computed by calculation server */
+  ta_to_pa_ehave: number;
+  ta_to_pa_u: number;
+  /** Facade metrics */
+  evmax: number;
+  ksmax: number;
   /** Glare Rating RG */
   rg: number;
 }
@@ -199,6 +203,8 @@ export interface ResultMetric {
   label: string;
   /** Subscript text, e.g. "m" for E_m */
   subscript?: string;
+  /** Definitionsformel, z.B. "Emin / Em" — als kleine Erläuterung unter dem Label. */
+  formula?: string;
   requirement: string;
   result: string;
   passed: boolean;

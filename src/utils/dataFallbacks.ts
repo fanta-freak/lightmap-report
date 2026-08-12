@@ -11,13 +11,15 @@ import type {
   LightPoint,
   Direction,
   Luminaire,
-  CalculationPoint,
+  CalculationPoint,  // kept for function signature compatibility
   FieldResult,
   ResultMetric,
 } from '../types';
 
 /* ─── Color palette for luminaire type dots ─── */
-const DOT_COLORS = [
+// Exportiert, damit Mast-Tabelle, Karte und Leuchten-Datenblätter dieselbe
+// Farbkodierung pro Leuchtentyp verwenden können (Kundenwunsch 2026-03).
+export const DOT_COLORS = [
   '#F97316', // orange
   '#3B82F6', // blue
   '#10B981', // green
@@ -149,76 +151,30 @@ const fmtDe = (n: number, decimals = 2) =>
   n.toFixed(decimals).replace('.', ',');
 
 /**
- * Compute fieldMetrics from `results` (FieldResult) + calculationPoints.
+ * Build field metrics table purely from pre-computed server results.
  *
- * Uses the pre-computed results record (rg, ta/pa values) when available.
- * Falls back to computing from raw eh values in calculationPoints.
+ * This function does NO recalculation — all values come directly from the
+ * calculation server's results record. The report is a dumb display layer.
  */
 export function computeFieldMetrics(
-  calculationPoints: CalculationPoint[],
+  _calculationPoints: CalculationPoint[],
   results?: FieldResult[],
 ): ResultMetric[] {
   const r = results && results.length > 0 ? results[0] : null;
+  if (!r) return [];
 
-  // --- Gather eh-based stats as fallback ---
-  const ehValues = calculationPoints
-    .map((cp) => cp.eh)
-    .filter((v): v is number => v != null && typeof v === 'number' && !isNaN(v));
-
-  const ehMean = ehValues.length > 0 ? ehValues.reduce((a, b) => a + b, 0) / ehValues.length : null;
-  const ehMin = ehValues.length > 0 ? Math.min(...ehValues) : null;
-  const ehMax = ehValues.length > 0 ? Math.max(...ehValues) : null;
-
-  // --- Use results record if available, otherwise fall back to eh stats ---
-  const taEhave = r?.ta_ehave ?? ehMean;
-  const taEhmin = r?.ta_ehmin ?? ehMin;
-  const taU = r?.ta_u ?? (taEhave && taEhmin ? taEhmin / taEhave : null);
-  const paEhave = r?.pa_ehave ?? null;
-  const paU = r?.pa_u ?? null;
-  const rg = r?.rg ?? null;
-
-  // ── Emin/Emax: aus dem Ergebnissatz, nicht aus dem Rasterfeld ──────────
-  // 2026-08-07 (Rainers Befund "die Zahlen sind falsch zusammengestellt"):
-  // Hier stand `ehMin`, also das Minimum ueber calculationPoints. Das ist
-  // aus zwei Gruenden falsch:
-  //
-  //   1. Das Rasterfeld gehoert nicht zwingend zu DIESEM Lauf. Ein Projekt
-  //      hat genau EINEN Satz Rechenpunkte, den jede neue Berechnung
-  //      ueberschreibt — die Kennzahlen im results-Satz bleiben dagegen je
-  //      Lauf erhalten. Bei Report 841 kamen die Kennzahlen aus Lauf 319
-  //      (Emin 42,7) und das Raster aus Lauf 321 (Emin 0,3), 26 Sekunden
-  //      vorher gerechnet.
-  //   2. Selbst beim passenden Lauf ist das blosse Raster-Minimum nicht die
-  //      Norm-Groesse: `pa_ehmin` ist der Wert der SPIELFLAECHE, den die
-  //      Engine ausweist.
-  //
-  // Ergebnis war ein Bericht, der sich selbst widersprach: Emin 0,3 lux bei
-  // Em 84 lux waere eine Gleichmaessigkeit von 0,004 — ausgewiesen war 0,50.
-  const eMin = r?.pa_ehmin ?? ehMin ?? taEhmin;
-  const eMax = r?.pa_ehmax ?? ehMax;
-  const minMaxRatio = eMin != null && eMax != null && eMax > 0 ? eMin / eMax : null;
-
-  // Ta/Pa illuminance ratio
-  const taPaIllum = taEhave != null && paEhave != null && paEhave > 0
-    ? (taEhave / paEhave) * 100 : null;
-
-  // Ta/Pa uniformity ratio
-  const taPaUnif = taU != null && paU != null && paU > 0
-    ? (taU / paU) * 100 : null;
-
-  if (taEhave == null) return []; // No data at all
-
-  // ── Spielflaeche, nicht Gesamtflaeche ──────────────────────────────────
-  // 2026-08-07: Die beiden ersten Zeilen nahmen `ta_*` (Gesamtflaeche =
-  // Spielfeld plus 2,5 m Umlauf). Geprueft wird nach EN 12193 aber die
-  // SPIELFLAECHE, und genau die zeigt auch die Projektseite im Tool.
-  // Wirkung bei Rainers Report 841: Em stand mit 84 lux statt 81,5, und die
-  // Gleichmaessigkeit mit ta_u = 0,50 statt pa_u = 0,52 — dadurch bekam ein
-  // Entwurf ein rotes Kreuz, der die Vorgabe tatsaechlich erfuellt.
-  // Die beiden Ta/Pa-Verhaeltniszeilen weiter unten brauchen die
-  // Gesamtflaechenwerte natuerlich weiterhin.
-  const emWert = paEhave ?? taEhave;
-  const uWert = paU ?? taU;
+  // ── Alles direkt aus dem results-Satz des Rechenservers ────────────────
+  // Merge 2026-08-12: die Juli-Linie (PR "pure display layer") hatte die
+  // Nachrechnung aus calculationPoints entfernt, die August-Linie die
+  // Quellen auf die SPIELFLAECHE (pa_*) umgestellt — das Rasterfeld gehoert
+  // nicht zwingend zu DIESEM Lauf (Rainers Befund, Report 841). Beides gilt
+  // jetzt zusammen: keine Nachrechnung, PA-Werte fuehren, Ta/Pa kommt als
+  // vorberechnetes Verhaeltnis vom Server.
+  const emWert = r.pa_ehave ?? r.ta_ehave ?? null;
+  const uWert = r.pa_u ?? r.ta_u ?? null;
+  const rg = r.rg ?? null;
+  const taPaIllum = r.ta_to_pa_ehave != null ? r.ta_to_pa_ehave * 100 : null;
+  const taPaUnif = r.ta_to_pa_u != null ? r.ta_to_pa_u * 100 : null;
 
   // ── Nachweis auf den Anzeigewerten, mit ≥/≤ statt >/< ──────────────────
   // 2026-08-11: EN 12193 nennt MINDEST- bzw. Hoechstwerte — ein exakt
@@ -237,23 +193,27 @@ export function computeFieldMetrics(
 
   const metrics: ResultMetric[] = [
     {
+      // EN 12193: Average maintained illuminance on playing area (PA)
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
       requirement: '≥ 75 lux',
       result: emAnzeige != null ? `${emAnzeige} lux` : '—',
       passed: emAnzeige != null ? emAnzeige >= 75 : true,
       unit: 'lux',
-      source: r ? 'dump' : 'dump',
+      source: 'dump',
     },
     {
+      // EN 12193: Uniformity on playing area (Emin / Eavg)
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
+      formula: 'Eₘᵢₙ / Ēₘ',
       requirement: '≥ 0,50',
       result: uAnzeige != null ? fmtDe(uAnzeige) : '—',
       passed: uAnzeige != null ? uAnzeige >= 0.5 : true,
-      source: r ? 'dump' : 'dump',
+      source: 'dump',
     },
     {
+      // EN 12193: Glare rating (threshold increment)
       label: 'Blendindex R',
       subscript: 'G',
       requirement: '≤ 55',
@@ -262,42 +222,53 @@ export function computeFieldMetrics(
       source: rg != null ? 'dump' : 'invented',
     },
     {
+      // EN 12193: TA/PA illuminance ratio — pre-computed by server
       label: 'Verhältnis Beleuchtungsstärke T',
       subscript: 'a/Pa',
+      formula: 'Ēₘ(Ta) / Ēₘ(Pa)',
       requirement: '≥ 75 %',
       result: taPaIllumAnzeige != null ? `${taPaIllumAnzeige} %` : '—',
       passed: taPaIllumAnzeige != null ? taPaIllumAnzeige >= 75 : true,
       source: taPaIllum != null ? 'dump' : 'invented',
     },
     {
+      // EN 12193: TA/PA uniformity ratio — pre-computed by server
       label: 'Verhältnis Gleichmäßigkeit T',
       subscript: 'a/Pa',
+      formula: 'Uₒ(Ta) / Uₒ(Pa)',
       requirement: '≥ 75 %',
       result: taPaUnifAnzeige != null ? `${taPaUnifAnzeige} %` : '—',
       passed: taPaUnifAnzeige != null ? taPaUnifAnzeige >= 75 : true,
       source: taPaUnif != null ? 'dump' : 'invented',
     },
     {
+      // Info: Emin/Emax ratio on playing area.
+      // pa_ehmax gibt es erst seit 2026-08-07 — eingefrorene aeltere
+      // Payloads haben das Feld nicht, deshalb ueberall der '—'-Rueckfall.
       label: 'Ungleichmäßigkeit E',
       subscript: 'min/max',
+      formula: 'Eₘᵢₙ / Eₘₐₓ',
       requirement: '',
-      result: minMaxRatio != null ? fmtDe(minMaxRatio) : '—',
+      result: r.pa_ehmin != null && r.pa_ehmax != null && r.pa_ehmax > 0
+        ? fmtDe(r.pa_ehmin / r.pa_ehmax) : '—',
       passed: true,
       source: 'dump',
     },
     {
+      // Info: minimum illuminance on playing area
       label: 'E',
       subscript: 'min',
       requirement: '',
-      result: eMin != null ? `${fmtDe(eMin, 1)} lux` : '—',
+      result: r.pa_ehmin != null ? `${fmtDe(r.pa_ehmin, 1)} lux` : '—',
       passed: true,
       source: 'dump',
     },
     {
+      // Info: maximum illuminance on playing area
       label: 'E',
       subscript: 'max',
       requirement: '',
-      result: eMax != null ? `${fmtDe(eMax, 1)} lux` : '—',
+      result: r.pa_ehmax != null ? `${fmtDe(r.pa_ehmax, 1)} lux` : '—',
       passed: true,
       source: 'dump',
     },
