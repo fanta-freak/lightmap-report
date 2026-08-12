@@ -3,6 +3,7 @@ import { ReportMap } from '../map/ReportMap';
 import { detectAxisSwap, type GeoCenter } from '../../utils/coordinates';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 import { grosseZahl, zahl } from '../../utils/format';
+import { gruppiereMasten } from '../../utils/masten';
 
 interface FieldDetailSectionProps {
   data: ReportData;
@@ -17,13 +18,30 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter, metrics
   const halfW = project.field_width / 2;
   const halfL = project.field_length / 2;
   const swapped = detectAxisSwap(calculationPoints, project.field_length, project.field_width);
+  // Ein Tabellen-/Karteneintrag je MAST: Leuchten, die sich eine Position
+  // teilen (Presets mit 2 Leuchten pro Mast), werden gruppiert — vorher
+  // fuehrte die Tabelle je Leuchte eine "Mast"-Zeile und die Labels auf der
+  // Karte druckten sich uebereinander.
+  const mastGruppen = gruppiereMasten(lightpoints);
   // Kundenwunsch 2026-03: bei mehr als 6 Masten die Zeilen enger setzen,
   // damit die Tabelle auf eine Druckseite passt.
-  const compact = lightpoints.length > 6;
+  const compact = mastGruppen.length > 6;
   const rowPad = compact ? 'py-1.5' : 'py-3';
-  // Farbkodierung wie auf der Karte: pro Mast dieselbe Farbe wie in der
+  // Farbkodierung wie auf der Karte: pro Leuchte dieselbe Farbe wie in der
   // Leuchtenliste (luminaireList ist reihenfolgegleich mit lightpoints).
   const mastColors = luminaireList.map((e) => e.colorDot);
+  // Leuchtentypen eines Masts mit Stueckzahl zusammenfassen ("2 × BVP528…");
+  // Farbe je Typ = Farbe der ersten Leuchte dieses Typs am Mast.
+  const typenJeMast = (g: (typeof mastGruppen)[number]) => {
+    const typen: { name: string | null; anzahl: number; color: string }[] = [];
+    g.indices.forEach((li) => {
+      const name = lightpoints[li].ldt_file_name;
+      const vorhanden = typen.find((t) => t.name === name);
+      if (vorhanden) vorhanden.anzahl += 1;
+      else typen.push({ name, anzahl: 1, color: mastColors[li] ?? '#9CA3AF' });
+    });
+    return typen;
+  };
   // Vorgabewerte (Ēm, Uo) aus den Kenngrößen ziehen und den Vergleichsoperator
   // (≥/>) entfernen — Kundenwunsch 2026-05 (S28): Vorgabe im Report ausgeben.
   const stripCmp = (s?: string) => (s ?? '').replace(/^[≥>≤<]\s*/, '').trim();
@@ -147,38 +165,41 @@ export function FieldDetailSection({ data, fieldNumber, spec, geoCenter, metrics
               </tr>
             </thead>
             <tbody>
-              {lightpoints.map((mast, i) => (
+              {mastGruppen.map((g) => (
                 <tr
-                  key={mast.id}
+                  key={g.mastNumber}
                   className="border-b border-gray-50 hover:bg-signify-teal/5 transition-colors"
                 >
                   <td className={rowPad}>
                     <span className={`inline-flex items-center justify-center rounded-full bg-signify-dark text-white font-bold ${compact ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'}`}>
-                      {i + 1}
+                      {g.mastNumber}
                     </span>
                   </td>
                   {/* rowPad: enge Zeilen ab 7 Masten (Juli-PR #1); zahl():
                       null-sicher fuer eingefrorene Alt-Payloads (August). */}
                   <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
-                    <SourceBadge source="dump">{zahl(mast.x, 1)} m</SourceBadge>
+                    <SourceBadge source="dump">{zahl(g.x, 1)} m</SourceBadge>
                   </td>
                   <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
-                    <SourceBadge source="dump">{zahl(mast.y, 1)} m</SourceBadge>
+                    <SourceBadge source="dump">{zahl(g.y, 1)} m</SourceBadge>
                   </td>
                   <td className={`${rowPad} text-right font-mono text-sm text-signify-dark`}>
-                    <SourceBadge source="dump">{mast.mastheight} m</SourceBadge>
+                    <SourceBadge source="dump">{g.items[0].mastheight} m</SourceBadge>
                   </td>
                   <td className={`${rowPad} text-left pl-4`}>
-                    <div className="flex items-center gap-2">
-                      {/* Farbkodierung wie auf der Karte / in der Leuchtenliste */}
-                      <span
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: mastColors[i] ?? '#9CA3AF' }}
-                      />
-                      <span className="text-sm text-signify-dark truncate block max-w-[240px]" title={mast.ldt_file_name ?? ''}>
-                        {mast.ldt_file_name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
-                      </span>
-                    </div>
+                    {/* Alle Leuchtentypen dieses Masts, mit Stueckzahl ab 2 */}
+                    {typenJeMast(g).map((typ, ti) => (
+                      <div key={ti} className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: typ.color }}
+                        />
+                        <span className="text-sm text-signify-dark truncate block max-w-[240px]" title={typ.name ?? ''}>
+                          {typ.anzahl > 1 ? `${typ.anzahl} × ` : ''}
+                          {typ.name ?? <SourceBadge source="dump"><span className="italic text-signify-gray">NULL</span></SourceBadge>}
+                        </span>
+                      </div>
+                    ))}
                   </td>
                 </tr>
               ))}

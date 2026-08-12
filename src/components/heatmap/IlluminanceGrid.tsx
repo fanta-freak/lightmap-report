@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { CalculationPoint, LightPoint, Direction } from '../../types';
 import { luxToColor, textColorForLux } from '../../utils/colorScale';
+import { gruppiereMasten } from '../../utils/masten';
 import { HeatmapTooltip } from './HeatmapTooltip';
 
 interface IlluminanceGridProps {
@@ -289,9 +290,11 @@ export function IlluminanceGrid({
         });
       }
 
-      // Draw mast markers and labels
+      // Draw mast markers and labels — ein Punkt/Label je MAST (gruppierte
+      // Position), nicht je Leuchte: bei 2 Leuchten pro Mast druckten sich
+      // vorher zwei Labels uebereinander. Die Pfeile oben bleiben je Leuchte.
       ctx.font = 'bold 12px Inter, system-ui, sans-serif';
-      masts.forEach((mast, i) => {
+      gruppiereMasten(masts).forEach((mast) => {
         const mh = toCanvasH(getH(mast.x, mast.y));
         const mv = toCanvasV(getV(mast.x, mast.y));
 
@@ -321,7 +324,7 @@ export function IlluminanceGrid({
         ctx.fillStyle = '#1A1A2E';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`Mast ${i + 1}`, labelH, labelV);
+        ctx.fillText(`Mast ${mast.mastNumber}`, labelH, labelV);
       });
     });
 

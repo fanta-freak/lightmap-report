@@ -2,6 +2,7 @@ import type { ReportData } from '../../types';
 import { SourceBadge, type DataSource } from '../shared/SourceBadge';
 import { grosseZahl, ersteZahl, zahl, KEIN_WERT } from '../../utils/format';
 import { gesamtleistung, DOT_COLORS } from '../../utils/dataFallbacks';
+import { gruppiereMasten, mastNummern } from '../../utils/masten';
 
 interface LuminaireSectionProps {
   data: ReportData;
@@ -10,9 +11,13 @@ interface LuminaireSectionProps {
 export function LuminaireSection({ data }: LuminaireSectionProps) {
   const { luminaireList, luminaires, project } = data;
   // Eindeutige Mastpositionen (mehrere Leuchten können auf einem Mast sitzen) — S30
-  const mastCount = new Set(
-    data.lightpoints.map((lp) => `${lp.x.toFixed(1)}|${lp.y.toFixed(1)}`)
-  ).size;
+  const mastCount = gruppiereMasten(data.lightpoints).length;
+  // Mast-Spalte: gruppierte Nummer statt entry.mastNumber aus dem Payload —
+  // das zaehlte je LEUCHTE durch und nannte Leuchte 8 "Mast 8". Zwei Leuchten
+  // desselben Masts zeigen jetzt dieselbe Nummer, passend zu Karte/Heatmap.
+  const mastNrJeLeuchte = mastNummern(
+    luminaireList.map((e) => ({ x: e.position.x, y: e.position.y })),
+  );
 
   // Projekt-Aggregat, sonst Summe der Masten — siehe gesamtleistung().
   const anlagenLeistung = gesamtleistung(project.project_wattage, data.lightpoints);
@@ -37,9 +42,11 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
           <p className="text-xs text-signify-gray mt-0.5">
             {luminaireList.length} Leuchten auf {mastCount} Masten
           </p>
-          {/* 10.08.2026: Die Liste fuehrt genau eine Leuchte je Mast — mehr
-              als eine Leuchte pro Mast kann die Rechenkette bisher nicht
-              abbilden. Lieber ausgesprochen als stillschweigend angenommen. */}
+          {/* 12.08.2026: Die Liste fuehrt eine Zeile je LEUCHTE; die Presets
+              setzen inzwischen bis zu 2 Leuchten auf einen Mast (z.B.
+              "6 Masten 1·2·1" = 12 Leuchten). Die Mast-Spalte traegt deshalb
+              die gruppierte Mastnummer — mehrere Zeilen koennen denselben
+              Mast nennen, das ist gewollt. */}
         </div>
         <div className="px-4 py-4 overflow-x-auto">
           <table className="w-full min-w-[700px]">
@@ -84,7 +91,7 @@ export function LuminaireSection({ data }: LuminaireSectionProps) {
                   </td>
                   <td className="py-3 px-3 text-center">
                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-signify-dark text-white text-xs font-bold">
-                      {entry.mastNumber}
+                      {mastNrJeLeuchte[i] ?? entry.mastNumber}
                     </span>
                   </td>
                   <td className="py-3 px-3 text-right font-mono text-sm text-signify-dark">

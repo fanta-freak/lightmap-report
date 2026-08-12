@@ -2,6 +2,7 @@ import { useRef, useEffect, useMemo } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { LightPoint, Direction, Building } from '../../types';
+import { gruppiereMasten } from '../../utils/masten';
 import {
   localToLngLat,
   fieldPolygonGeoJSON,
@@ -97,12 +98,15 @@ export function ReportMap({
     // The swap only applies to DATA points (masts, calc points) whose X/Y meanings differ.
     const fieldFeature = fieldPolygonGeoJSON(halfWidth, halfLength, geoCenter);
 
-    // Mast points
-    const mastFeatures: GeoJSON.Feature[] = masts.map((m, i) => {
-      const lngLat = toGeo(m.x, m.y);
+    // Mast points — ein Marker je MAST (gruppierte Position), nicht je
+    // Leuchte: bei 2 Leuchten pro Mast druckten sich vorher zwei Labels
+    // ("Mast 7"/"Mast 8") uebereinander. Farbe = Leuchtentyp der ersten
+    // Leuchte des Masts; die Ausricht-Pfeile unten bleiben je Leuchte.
+    const mastFeatures: GeoJSON.Feature[] = gruppiereMasten(masts).map((g) => {
+      const lngLat = toGeo(g.x, g.y);
       return {
         type: 'Feature' as const,
-        properties: { label: `Mast ${i + 1}`, color: mastColors[i] ?? '#67E8F9' },
+        properties: { label: `Mast ${g.mastNumber}`, color: mastColors[g.indices[0]] ?? '#67E8F9' },
         geometry: { type: 'Point' as const, coordinates: lngLat },
       };
     });
