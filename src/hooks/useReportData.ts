@@ -77,11 +77,13 @@ function applyFallbacks(report: ReportDetail): ReportDetail {
       ? p.luminaireList
       : synthesizeLuminaireList(lightpoints, p.directions, p.luminaires);
 
-  // Auto-compute fieldMetrics from results[] + calculationPoints if empty
+  // Auto-compute fieldMetrics from results[] + calculationPoints if empty.
+  // fieldSpec liefert seit 13.08.2026 die editierbaren Norm-Vorgaben
+  // (emTarget/uoTarget/rgMax) fuer die Vorgabe-Spalte und den Nachweis.
   const fieldMetrics =
     p.fieldMetrics && p.fieldMetrics.length > 0
       ? p.fieldMetrics
-      : computeFieldMetrics(calculationPoints, p.results);
+      : computeFieldMetrics(calculationPoints, p.results, p.fieldSpec);
 
   // Always attach glossary from mock data (not expected from API)
   const glossaryTerms =

@@ -144,6 +144,16 @@ export interface FieldSpecification {
    *  erste davon — bei gemischten Hoehen stand dort bisher eine willkuerliche
    *  Zahl. Ab 10.08.2026 im Payload, deshalb optional. */
   mountingHeights?: number[];
+  /** Editierbare Norm-Vorgaben (ab 13.08.2026 im Payload): die drei
+   *  Pruefwerte, gegen die Optimierung und Nachweis dieses Projekts laufen.
+   *  Fehlen die Felder (eingefrorene aeltere Reports), gelten die
+   *  Klasse-III-Defaults 75 lx / 0,5 / 55. `normEdited` sagt, ob vom
+   *  Default abgewichen wurde — dann schreibt der Bericht "Editierte Norm"
+   *  statt EN 12193 / Klasse III. */
+  emTarget?: number;
+  uoTarget?: number;
+  rgMax?: number;
+  normEdited?: boolean;
 }
 
 /* ─── Identitaet des gedruckten Laufs ─── */

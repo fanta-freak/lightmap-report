@@ -14,6 +14,7 @@ import type {
   CalculationPoint,  // kept for function signature compatibility
   FieldResult,
   ResultMetric,
+  FieldSpecification,
 } from '../types';
 
 /* ─── Color palette for luminaire type dots ─── */
@@ -159,9 +160,20 @@ const fmtDe = (n: number, decimals = 2) =>
 export function computeFieldMetrics(
   _calculationPoints: CalculationPoint[],
   results?: FieldResult[],
+  spec?: FieldSpecification,
 ): ResultMetric[] {
   const r = results && results.length > 0 ? results[0] : null;
   if (!r) return [];
+
+  // ── Editierbare Norm-Vorgaben (2026-08-13) ─────────────────────────────
+  // Die drei Pruefwerte kommen jetzt aus dem fieldSpec des Payloads (der
+  // Nutzer kann sie je Projekt anpassen); eingefrorene aeltere Payloads
+  // haben die Felder nicht und fallen auf die Klasse-III-Defaults zurueck.
+  // Die TA/PA-Quoten (75 %) bleiben fix — die Norm fordert sie unabhaengig
+  // vom gewaehlten Beleuchtungsniveau.
+  const emSoll = spec?.emTarget ?? 75;
+  const uoSoll = spec?.uoTarget ?? 0.5;
+  const rgSoll = spec?.rgMax ?? 55;
 
   // ── Alles direkt aus dem results-Satz des Rechenservers ────────────────
   // Merge 2026-08-12: die Juli-Linie (PR "pure display layer") hatte die
@@ -193,12 +205,12 @@ export function computeFieldMetrics(
 
   const metrics: ResultMetric[] = [
     {
-      // EN 12193: Average maintained illuminance on playing area (PA)
+      // EN 12193 (bzw. editierte Vorgabe): Average maintained illuminance (PA)
       label: 'Mittlerer Wartungswert E',
       subscript: 'm',
-      requirement: '≥ 75 lux',
+      requirement: `≥ ${fmtDe(emSoll, Number.isInteger(emSoll) ? 0 : 1)} lux`,
       result: emAnzeige != null ? `${emAnzeige} lux` : '—',
-      passed: emAnzeige != null ? emAnzeige >= 75 : true,
+      passed: emAnzeige != null ? emAnzeige >= emSoll : true,
       unit: 'lux',
       source: 'dump',
     },
@@ -207,18 +219,18 @@ export function computeFieldMetrics(
       label: 'Gleichmäßigkeit E',
       subscript: 'min/m',
       formula: 'Eₘᵢₙ / Ēₘ',
-      requirement: '≥ 0,50',
+      requirement: `≥ ${fmtDe(uoSoll)}`,
       result: uAnzeige != null ? fmtDe(uAnzeige) : '—',
-      passed: uAnzeige != null ? uAnzeige >= 0.5 : true,
+      passed: uAnzeige != null ? uAnzeige >= uoSoll : true,
       source: 'dump',
     },
     {
       // EN 12193: Glare rating (threshold increment)
       label: 'Blendindex R',
       subscript: 'G',
-      requirement: '≤ 55',
+      requirement: `≤ ${fmtDe(rgSoll, Number.isInteger(rgSoll) ? 0 : 1)}`,
       result: rgAnzeige != null ? fmtDe(rgAnzeige, 1) : '—',
-      passed: rgAnzeige != null ? rgAnzeige <= 55 : true,
+      passed: rgAnzeige != null ? rgAnzeige <= rgSoll : true,
       source: rg != null ? 'dump' : 'invented',
     },
     {

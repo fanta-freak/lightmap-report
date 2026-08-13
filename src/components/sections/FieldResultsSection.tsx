@@ -31,9 +31,16 @@ export function FieldResultsSection({ data, fieldNumber, metrics, spec }: FieldR
       </div>
 
       {/* Results table with pass/fail */}
+      {/* 13.08.2026: bei editierten Norm-Vorgaben (fieldSpec.normEdited)
+          nicht mehr "nach EN 12193" behaupten — der Nachweis lief gegen
+          die angepassten Werte (siehe Vorgabe-Spalte). */}
       <ResultsTable
         title={titel}
-        subtitle="Lichttechnische Ergebnisse nach EN 12193"
+        subtitle={
+          spec?.normEdited
+            ? 'Lichttechnische Ergebnisse nach editierten Vorgaben (Basis EN 12193)'
+            : 'Lichttechnische Ergebnisse nach EN 12193'
+        }
         metrics={metrics}
       />
 
